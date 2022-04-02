@@ -62,7 +62,7 @@ public class App : IHostedService
 
         for (int i = 0; i < 100000; i++)
         {
-            _logger.LogInformation(LoremIpsum(20, 20, 20, 20));
+            _logger.LogInformation(LoremIpsum(6, 20, 4, 8));
         }
 
         watch.Stop();
@@ -72,9 +72,9 @@ public class App : IHostedService
         await Task.Delay(1);
     }
 
-    private static bool bacon = false;
+    private bool firstSentence = false;
 
-    public static string LoremIpsum(int minWords = 6, int maxWords = 20, int minSentences = 1, int maxSentences = 6)
+    public string LoremIpsum(int minWords = 6, int maxWords = 20, int minSentences = 1, int maxSentences = 6)
     {
         var words = new[] {"bacon", "ipsum", "dolor", "amet", "bresola", "tempor", "strip",
                 "leberkas", "excepteur", "irure", "hamburger", "alcatra", "veniam", "turkey",
@@ -101,10 +101,10 @@ public class App : IHostedService
         CultureInfo cultureInfo = Thread.CurrentThread.CurrentCulture;
         TextInfo textInfo = cultureInfo.TextInfo;
 
-        if (bacon == false && numSentences > 1 && numWords >= 5)
+        if (firstSentence == false && numSentences > 1 && numWords >= 5)
         {
             result.Append("Bacon ipsum dolor amet ");
-            bacon = true;
+            firstSentence = true;
         }
 
         for (int s = 0; s < numSentences; s++)
