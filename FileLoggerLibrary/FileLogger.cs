@@ -201,6 +201,6 @@ public class FileLogger : ILogger, ILoggerProvider, IFileLogger
     /// </summary>
     public void Dispose()
     {
-
+        _fileLoggerProvider.Dispose();
     }
 }
