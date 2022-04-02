@@ -220,7 +220,7 @@ public class FileLoggerProvider : ILoggerProvider, IDisposable, IFileLoggerProvi
             //              to start writing a new file.
             for (int i = 0; i < LogMaxCount; i++)
             {
-                string fileName = $"{LogFolder}\\{LogName}_{i}.log";
+                string fileName = $@"{LogFolder}\{LogName}_{i}.log";
 
                 if (File.Exists(fileName))
                 {
@@ -244,7 +244,7 @@ public class FileLoggerProvider : ILoggerProvider, IDisposable, IFileLoggerProvi
             }
 
             // Full house? -- Start over from the top.
-            LogFilename = $"{LogFolder}\\{LogName}_0.log";
+            LogFilename = $@"{LogFolder}\{LogName}_0.log";
             LogIncrement = 0;
         }
         else
@@ -255,12 +255,12 @@ public class FileLoggerProvider : ILoggerProvider, IDisposable, IFileLoggerProvi
             if (LogIncrement + 1 < LogMaxCount)
             {
                 // Next log increment.
-                LogFilename = $"{LogFolder}\\{LogName}_{++LogIncrement}.log";
+                LogFilename = $@"{LogFolder}\{LogName}_{++LogIncrement}.log";
             }
             else
             {
                 // Start over from the top.
-                LogFilename = $"{LogFolder}\\{LogName}_0.log";
+                LogFilename = $@"{LogFolder}\{LogName}_0.log";
                 LogIncrement = 0;
             }
         }
