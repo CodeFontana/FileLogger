@@ -26,7 +26,7 @@ internal class Program
                 .ConfigureLogging(logging =>
                 {
                     logging.ClearProviders();
-                    logging.AddFileLogger("FileLoggerDemo", $@"{Directory.GetCurrentDirectory()}\log", 10 * 1048576, 5);
+                    logging.AddFileLogger("FileLoggerDemo");
                 })
                 .ConfigureServices((hostContext, services) =>
                 {
