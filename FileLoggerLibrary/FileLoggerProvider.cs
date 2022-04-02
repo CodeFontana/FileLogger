@@ -55,8 +55,8 @@ public class FileLoggerProvider : ILoggerProvider, IDisposable, IFileLoggerProvi
     {
         if (string.IsNullOrWhiteSpace(options.LogFolder))
         {
-            string processName = Process.GetCurrentProcess().MainModule.FileName;
-            string processPath = processName.Substring(0, processName.LastIndexOf("\\"));
+            string processName = Environment.ProcessPath;
+            string processPath = processName[..processName.LastIndexOf("\\")];
             LogFolder = processPath + @"\log";
         }
         else if (Directory.Exists(options.LogFolder) == false)
@@ -341,7 +341,7 @@ public class FileLoggerProvider : ILoggerProvider, IDisposable, IFileLoggerProvi
     /// <param name="header">Header text for length measurement.</param>
     /// <param name="message">Message text.</param>
     /// <returns></returns>
-    private string PadMessage(string header, string message)
+    private static string PadMessage(string header, string message)
     {
         string output;
 

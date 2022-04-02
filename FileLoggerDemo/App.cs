@@ -72,7 +72,7 @@ public class App : IHostedService
         await Task.Delay(1);
     }
 
-    private bool firstSentence = false;
+    private bool _firstSentence = false;
 
     public string LoremIpsum(int minWords = 6, int maxWords = 20, int minSentences = 1, int maxSentences = 6)
     {
@@ -101,10 +101,10 @@ public class App : IHostedService
         CultureInfo cultureInfo = Thread.CurrentThread.CurrentCulture;
         TextInfo textInfo = cultureInfo.TextInfo;
 
-        if (firstSentence == false && numSentences > 1 && numWords >= 5)
+        if (_firstSentence == false && numSentences > 1 && numWords >= 5)
         {
             result.Append("Bacon ipsum dolor amet ");
-            firstSentence = true;
+            _firstSentence = true;
         }
 
         for (int s = 0; s < numSentences; s++)

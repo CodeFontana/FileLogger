@@ -22,7 +22,7 @@ public class FileLoggerOptions
     /// <summary>
     /// Determines the maximum size, in bytes, of an individual log file.
     /// </summary>
-    public long LogMaxBytes { get; set; } = 50 * 1048576;
+    public long LogMaxBytes { get; set; } = 50 * 1000000;
 
     /// <summary>
     /// Determines the maximum number of log files.

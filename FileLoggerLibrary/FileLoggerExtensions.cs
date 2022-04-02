@@ -10,7 +10,7 @@ public static class FileLoggerExtensions
     {
         builder.Services.AddSingleton(new FileLoggerProvider(logName));
         builder.Services.AddTransient<ILoggerProvider>(x => x.GetRequiredService<FileLoggerProvider>());
-        builder.Services.AddTransient<IFileLogger>(x => x.GetRequiredService<FileLoggerProvider>().CreateFileLogger(logName));
+        builder.Services.AddTransient(x => x.GetRequiredService<FileLoggerProvider>().CreateFileLogger(logName));
         return builder;
     }
 
@@ -18,7 +18,7 @@ public static class FileLoggerExtensions
     {
         builder.Services.AddSingleton(new FileLoggerProvider(logName, logFolder));
         builder.Services.AddTransient<ILoggerProvider>(x => x.GetRequiredService<FileLoggerProvider>());
-        builder.Services.AddTransient<IFileLogger>(x => x.GetRequiredService<FileLoggerProvider>().CreateFileLogger(logName));
+        builder.Services.AddTransient(x => x.GetRequiredService<FileLoggerProvider>().CreateFileLogger(logName));
         return builder;
     }
 
@@ -26,7 +26,7 @@ public static class FileLoggerExtensions
     {
         builder.Services.AddSingleton(new FileLoggerProvider(logName, logFolder, logMaxBytes));
         builder.Services.AddTransient<ILoggerProvider>(x => x.GetRequiredService<FileLoggerProvider>());
-        builder.Services.AddTransient<IFileLogger>(x => x.GetRequiredService<FileLoggerProvider>().CreateFileLogger(logName));
+        builder.Services.AddTransient(x => x.GetRequiredService<FileLoggerProvider>().CreateFileLogger(logName));
         return builder;
     }
 
@@ -34,7 +34,7 @@ public static class FileLoggerExtensions
     {
         builder.Services.AddSingleton(new FileLoggerProvider(logName, logFolder, logMaxBytes, logMaxCount));
         builder.Services.AddTransient<ILoggerProvider>(x => x.GetRequiredService<FileLoggerProvider>());
-        builder.Services.AddTransient<IFileLogger>(x => x.GetRequiredService<FileLoggerProvider>().CreateFileLogger(logName));
+        builder.Services.AddTransient(x => x.GetRequiredService<FileLoggerProvider>().CreateFileLogger(logName));
         return builder;
     }
 
@@ -46,7 +46,7 @@ public static class FileLoggerExtensions
         {
             builder.Services.AddSingleton(fileLoggerProvider);
             builder.Services.AddTransient<ILoggerProvider>(x => x.GetRequiredService<FileLoggerProvider>());
-            builder.Services.AddTransient<IFileLogger>(x => x.GetRequiredService<FileLoggerProvider>().CreateFileLogger(fileLoggerProvider.LogName));
+            builder.Services.AddTransient(x => x.GetRequiredService<FileLoggerProvider>().CreateFileLogger(fileLoggerProvider.LogName));
         }
 
         return builder;
@@ -95,10 +95,7 @@ public static class FileLoggerExtensions
             options.LogMaxCount = maxFiles;
         }
 
-        if (configure != null)
-        {
-            configure(options);
-        }
+        configure?.Invoke(options);
 
         return new FileLoggerProvider(options);
     }
