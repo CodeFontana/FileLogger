@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "FileLoggerDemo": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}
