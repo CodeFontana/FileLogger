@@ -2,7 +2,7 @@
 
 namespace FileLoggerLibrary;
 
-public class FileLogger : ILogger
+internal class FileLogger : ILogger
 {
     private readonly FileLoggerProvider _fileLoggerProvider;
     private readonly string _logName;
