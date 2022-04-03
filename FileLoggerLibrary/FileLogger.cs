@@ -2,7 +2,7 @@
 
 namespace FileLoggerLibrary;
 
-public class FileLogger : ILogger, ILoggerProvider, IFileLogger
+public class FileLogger : ILogger
 {
     private readonly FileLoggerProvider _fileLoggerProvider;
     private readonly string _logName;
@@ -194,13 +194,5 @@ public class FileLogger : ILogger, ILoggerProvider, IFileLogger
                     break;
             }
         }
-    }
-
-    /// <summary>
-    /// Dispose resources.
-    /// </summary>
-    public void Dispose()
-    {
-        _fileLoggerProvider.Dispose();
     }
 }

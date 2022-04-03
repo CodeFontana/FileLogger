@@ -1,10 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 
 namespace FileLoggerLibrary;
 
-public class FileLoggerProvider : ILoggerProvider, IDisposable, IFileLoggerProvider
+public class FileLoggerProvider : ILoggerProvider, IDisposable
 {
     private readonly BlockingCollection<string> _messageQueue = new(1024);
     private readonly Task _processMessages;
