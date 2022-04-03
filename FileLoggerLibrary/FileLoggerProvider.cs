@@ -15,12 +15,12 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
 
     public Dictionary<LogLevel, ConsoleColor> LogLevels { get; set; } = new()
     {
-        [LogLevel.Trace] = ConsoleColor.Gray,
+        [LogLevel.Trace] = ConsoleColor.Cyan,
         [LogLevel.Debug] = ConsoleColor.Blue,
-        [LogLevel.Information] = ConsoleColor.DarkGreen,
-        [LogLevel.Warning] = ConsoleColor.Cyan,
+        [LogLevel.Information] = ConsoleColor.Green,
+        [LogLevel.Warning] = ConsoleColor.Yellow,
         [LogLevel.Error] = ConsoleColor.Red,
-        [LogLevel.Critical] = ConsoleColor.Magenta,
+        [LogLevel.Critical] = ConsoleColor.DarkRed,
         [LogLevel.None] = ConsoleColor.White
 
     };
@@ -123,7 +123,10 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
 
             lock (_lockObj)
             {
+                ConsoleColor originalColor = Console.ForegroundColor;
+                Console.ForegroundColor = LogLevels[message.LogLevel];
                 Console.WriteLine(message);
+                Console.ForegroundColor = originalColor;
                 _logWriter.WriteLine(message);
             }
         }
