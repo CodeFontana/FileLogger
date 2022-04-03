@@ -11,18 +11,18 @@ public class FileLogger : ILogger
     /// Default constructor for a FileLogger object.
     /// </summary>
     /// <param name="fileLoggerProvider">The log provider this FileLogger instance is based.</param>
-    /// <param name="logName">Log or category name for this FileLogger instance</param>
+    /// <param name="categoryName">Log or category name for this FileLogger instance</param>
     /// <exception cref="ArgumentException">Null or empty arguments are not accepted.</exception>
-    public FileLogger(FileLoggerProvider fileLoggerProvider, string logName)
+    public FileLogger(FileLoggerProvider fileLoggerProvider, string categoryName)
     {
         _fileLoggerProvider = fileLoggerProvider ?? throw new ArgumentException("Log provider must not be NULL");
 
-        if (string.IsNullOrWhiteSpace(logName))
+        if (string.IsNullOrWhiteSpace(categoryName))
         {
             throw new ArgumentException("Log name must not be NULL or empty");
         }
 
-        _logName = logName;
+        _logName = categoryName;
     }
 
     /// <summary>

@@ -131,24 +131,25 @@ public class FileLoggerProvider : ILoggerProvider, IDisposable
     }
 
     /// <summary>
-    /// Creates a new FileLogger instance of the specified category.
-    /// </summary>
-    /// <param name="categoryName">Category name</param>
-    /// <returns>The ILogger for requested category was created.</returns>
-    public IFileLogger CreateFileLogger(string categoryName)
-    {
-        return new FileLogger(this, categoryName);
-    }
-
-    /// <summary>
     /// Creates a new ILogger instance of the specified category.
     /// </summary>
     /// <param name="categoryName">Category name</param>
     /// <returns>The ILogger for requested category was created.</returns>
     public ILogger CreateLogger(string categoryName)
     {
-        return new FileLogger(this, categoryName);
+        return _loggers.GetOrAdd(categoryName, CreateLoggerImplementation);
     }
+
+    /// <summary>
+    /// Implementation method, returns a FileLogger initialized with this
+    /// FileLoggerProvider, for the requested ILogger.
+    /// </summary>
+    /// <param name="categoryName"></param>
+    /// <returns></returns>
+    private FileLogger CreateLoggerImplementation(string categoryName) 
+    {
+			return new FileLogger(this, categoryName);
+	}
 
     /// <summary>
     /// Checks if the specified file is in-use.
