@@ -1,7 +1,7 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using FileLoggerLibrary;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 namespace FileLoggerDemo;
 
@@ -25,14 +25,13 @@ internal class Program
                 })
                 .ConfigureLogging(logging =>
                 {
-                    logging.ClearProviders();
                     logging.AddFileLogger("FileLoggerDemo");
+                    //logging.AddFileLogger("FileLoggerDemo", $@"{Environment.CurrentDirectory}\log", 50 * 1048576, 10, LogLevel.Trace);
                 })
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.AddHostedService<App>();
                 })
-                
                 .RunConsoleAsync();
         }
         catch (Exception ex)
