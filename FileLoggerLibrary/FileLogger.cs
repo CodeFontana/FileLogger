@@ -32,7 +32,7 @@ public class FileLogger : ILogger
     /// <returns></returns>
     public bool IsEnabled(LogLevel logLevel)
     {
-        return logLevel >= _fileLoggerProvider.LogMinLevel;
+        return logLevel >= _fileLoggerProvider.MinLevel;
     }
 
     /// <summary>
@@ -47,31 +47,11 @@ public class FileLogger : ILogger
     }
 
     /// <summary>
-    /// Creates a new FileLogger instance of the specified category.
-    /// </summary>
-    /// <param name="categoryName">Category name</param>
-    /// <returns>The ILogger for requested category was created.</returns>
-    public IFileLogger CreateFileLogger(string categoryName)
-    {
-        return new FileLogger(_fileLoggerProvider, $"{_fileLoggerProvider.LogName}|{categoryName}");
-    }
-
-    /// <summary>
-    /// Creates a new nested FileLogger instance of the specified category. This is useful for providing an in-depth callstack.
-    /// </summary>
-    /// <param name="categoryName">Category name</param>
-    /// <returns>The ILogger for requested category was created.</returns>
-    public ILogger CreateLogger(string categoryName)
-    {
-        return new FileLogger(_fileLoggerProvider, categoryName);
-    }
-
-    /// <summary>
     /// Formats the message and submits it to the Log Provider's Log() method.
     /// </summary>
     /// <param name="message">The message.</param>
     /// <param name="logLevel">The log level entry.</param>
-    public void Log(string message, LogLevel logLevel = LogLevel.Information)
+    public void Log(string message, LogLevel logLevel)
     {
         _fileLoggerProvider.Log($"{_logName}|{message}", logLevel);
     }
@@ -170,20 +150,20 @@ public class FileLogger : ILogger
         {
             switch (logLevel)
             {
-                case LogLevel.Critical:
-                    LogCritical(formatter(state, exception));
+                case LogLevel.Trace:
+                    LogTrace(formatter(state, exception));
                     break;
                 case LogLevel.Debug:
                     LogDebug(formatter(state, exception));
                     break;
+                case LogLevel.Warning:
+                    LogWarning(formatter(state, exception));
+                    break;
                 case LogLevel.Error:
                     LogError(formatter(state, exception));
                     break;
-                case LogLevel.Trace:
-                    LogTrace(formatter(state, exception));
-                    break;
-                case LogLevel.Warning:
-                    LogWarning(formatter(state, exception));
+                case LogLevel.Critical:
+                    LogCritical(formatter(state, exception));
                     break;
                 case LogLevel.None:
                     Log(formatter(state, exception), LogLevel.None);

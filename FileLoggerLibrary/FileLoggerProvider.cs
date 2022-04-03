@@ -5,6 +5,7 @@ namespace FileLoggerLibrary;
 
 public class FileLoggerProvider : ILoggerProvider, IDisposable
 {
+    private readonly ConcurrentDictionary<string, FileLogger> _loggers =  new();
     private readonly BlockingCollection<string> _messageQueue = new(1024);
     private readonly Task _processMessages;
     private FileStream _logStream = null;
@@ -12,13 +13,13 @@ public class FileLoggerProvider : ILoggerProvider, IDisposable
     private readonly object _lockObj = new();
     private bool _rollMode = false;
 
-    public string LogName { get; private set; }
-    public string LogFilename { get; private set; }
-    public string LogFolder { get; private set; } = "";
-    public int LogIncrement { get; private set; } = 0;
-    public long LogMaxBytes { get; private set; } = 50 * 1048576;
-    public uint LogMaxCount { get; private set; } = 10;
-    public LogLevel LogMinLevel { get; set; } = LogLevel.Trace;
+    public string Name { get; private set; }
+    public string Filename { get; private set; }
+    public string Folder { get; private set; } = "";
+    public int Increment { get; private set; } = 0;
+    public long MaxBytes { get; private set; } = 50 * 1048576;
+    public uint MaxCount { get; private set; } = 10;
+    public LogLevel MinLevel { get; private set; } = LogLevel.Trace;
 
     /// <summary>
     /// Default FileLoggerProvider constructor, instantiates a new log file instance.
@@ -27,20 +28,23 @@ public class FileLoggerProvider : ILoggerProvider, IDisposable
     ///   1 MB = 1000000 Bytes (in decimal)
     ///   1 MB = 1048576 Bytes (in binary)
     /// </summary>
-    /// <param name="logName">Name for log file.</param>
-    /// <param name="logFolder">Path where logs file(s) will be saved.</param>
-    /// <param name="logMaxBytes">Maximum size (in bytes) for the log file. If unspecified, the default is 50MB per log.</param>
-    /// <param name="logMaxCount">Maximum count of log files for rotation. If unspecified, the default is 10 logs.</param>
+    /// <param name="name">Name for log file.</param>
+    /// <param name="folder">Path where logs files will be saved.</param>
+    /// <param name="maxBytes">Maximum size (in bytes) for the log file. If unspecified, the default is 50MB per log.</param>
+    /// <param name="maxCount">Maximum count of log files for rotation. If unspecified, the default is 10 logs.</param>
+    /// <param name="minLevel">Minimum log level for output.</param>
     /// <returns></returns>
-    public FileLoggerProvider(string logName,
-                              string logFolder = null,
-                              long logMaxBytes = 50 * 1048576,
-                              uint logMaxCount = 10) : this(new()
+    public FileLoggerProvider(string name,
+                              string folder = null,
+                              long maxBytes = 50 * 1048576,
+                              uint maxCount = 10,
+                              LogLevel minLevel = LogLevel.Trace) : this(new()
                               {
-                                  LogName = logName,
-                                  LogFolder = logFolder,
-                                  LogMaxBytes = logMaxBytes,
-                                  LogMaxCount = logMaxCount
+                                  Name = name,
+                                  Folder = folder,
+                                  MaxBytes = maxBytes,
+                                  MaxCount = maxCount,
+                                  MinLevel = minLevel
                               })
     {
 
@@ -52,25 +56,26 @@ public class FileLoggerProvider : ILoggerProvider, IDisposable
     /// <param name="options">Configuration options to configure the FileLoggerProvider instance.</param>
     public FileLoggerProvider(FileLoggerOptions options)
     {
-        if (string.IsNullOrWhiteSpace(options.LogFolder))
+        if (string.IsNullOrWhiteSpace(options.Folder))
         {
             string processName = Environment.ProcessPath;
             string processPath = processName[..processName.LastIndexOf("\\")];
-            LogFolder = processPath + @"\log";
+            Folder = processPath + @"\log";
         }
-        else if (Directory.Exists(options.LogFolder) == false)
+        else if (Directory.Exists(options.Folder) == false)
         {
-            LogFolder = options.LogFolder;
+            Folder = options.Folder;
         }
         else
         {
-            LogFolder = options.LogFolder;
+            Folder = options.Folder;
         }
 
-        Directory.CreateDirectory(LogFolder);
-        LogName = options.LogName;
-        LogMaxBytes = options.LogMaxBytes;
-        LogMaxCount = options.LogMaxCount;
+        Directory.CreateDirectory(Folder);
+        Name = options.Name;
+        MaxBytes = options.MaxBytes;
+        MaxCount = options.MaxCount;
+        MinLevel = options.MinLevel;
         Open();
 
         // Start processing message queue
@@ -97,9 +102,9 @@ public class FileLoggerProvider : ILoggerProvider, IDisposable
     {
         foreach (string message in _messageQueue.GetConsumingEnumerable())
         {
-            long logSizeBytes = new FileInfo(LogFilename).Length;
+            long logSizeBytes = new FileInfo(Filename).Length;
 
-            if (logSizeBytes >= LogMaxBytes)
+            if (logSizeBytes >= MaxBytes)
             {
                 Open();
             }
@@ -184,7 +189,7 @@ public class FileLoggerProvider : ILoggerProvider, IDisposable
     public void Open()
     {
         // If open, close the log file.
-        if (LogFilename != null &&
+        if (Filename != null &&
             _logWriter != null &&
             _logWriter.BaseStream != null)
         {
@@ -195,7 +200,7 @@ public class FileLoggerProvider : ILoggerProvider, IDisposable
         IncrementLog();
 
         // Append the log file.
-        _logStream = new FileStream(LogFilename, FileMode.Append, FileAccess.Write, FileShare.Read);
+        _logStream = new FileStream(Filename, FileMode.Append, FileAccess.Write, FileShare.Read);
         _logWriter = new StreamWriter(_logStream)
         {
             AutoFlush = true
@@ -218,55 +223,55 @@ public class FileLoggerProvider : ILoggerProvider, IDisposable
             // Base case -- Find nearest unfilled log to continue
             //              appending, or nearest unused increment
             //              to start writing a new file.
-            for (int i = 0; i < LogMaxCount; i++)
+            for (int i = 0; i < MaxCount; i++)
             {
-                string fileName = $@"{LogFolder}\{LogName}_{i}.log";
+                string fileName = $@"{Folder}\{Name}_{i}.log";
 
                 if (File.Exists(fileName))
                 {
                     long length = new FileInfo(fileName).Length;
 
-                    if (length < LogMaxBytes && IsFileInUse(fileName) == false)
+                    if (length < MaxBytes && IsFileInUse(fileName) == false)
                     {
                         // Append unfilled log.
-                        LogFilename = fileName;
-                        LogIncrement = i;
+                        Filename = fileName;
+                        Increment = i;
                         return;
                     }
                 }
                 else
                 {
                     // Take this unused increment.
-                    LogFilename = fileName;
-                    LogIncrement = i;
+                    Filename = fileName;
+                    Increment = i;
                     return;
                 }
             }
 
             // Full house? -- Start over from the top.
-            LogFilename = $@"{LogFolder}\{LogName}_0.log";
-            LogIncrement = 0;
+            Filename = $@"{Folder}\{Name}_0.log";
+            Increment = 0;
         }
         else
         {
             // Inductive case -- We are in roll mode, so we just
             //                   use the next increment file, or
             //                   wrap around to the starting point.
-            if (LogIncrement + 1 < LogMaxCount)
+            if (Increment + 1 < MaxCount)
             {
                 // Next log increment.
-                LogFilename = $@"{LogFolder}\{LogName}_{++LogIncrement}.log";
+                Filename = $@"{Folder}\{Name}_{++Increment}.log";
             }
             else
             {
                 // Start over from the top.
-                LogFilename = $@"{LogFolder}\{LogName}_0.log";
-                LogIncrement = 0;
+                Filename = $@"{Folder}\{Name}_0.log";
+                Increment = 0;
             }
         }
 
         // Delete existing log, before using it.
-        File.Delete(LogFilename);
+        File.Delete(Filename);
     }
 
     /// <summary>
@@ -284,7 +289,7 @@ public class FileLoggerProvider : ILoggerProvider, IDisposable
                 _logStream?.Dispose();
                 _logWriter = null;
                 _logStream = null;
-                LogFilename = null;
+                Filename = null;
                 return true;
             }
         }
@@ -308,26 +313,26 @@ public class FileLoggerProvider : ILoggerProvider, IDisposable
 
         switch (logLevel)
         {
-            case LogLevel.Critical:
-                header += "CRIT|";
-                break;
-            case LogLevel.Debug:
-                header += "DBUG|";
-                break;
-            case LogLevel.Error:
-                header += "FAIL|";
-                break;
-            case LogLevel.Information:
-                header += "INFO|";
-                break;
-            case LogLevel.None:
-                header += "    |";
-                break;
             case LogLevel.Trace:
                 header += "TRCE|";
                 break;
             case LogLevel.Warning:
                 header += "WARN|";
+                break;
+            case LogLevel.Debug:
+                header += "DBUG|";
+                break;
+            case LogLevel.Information:
+                header += "INFO|";
+                break;
+            case LogLevel.Error:
+                header += "FAIL|";
+                break;
+            case LogLevel.Critical:
+                header += "CRIT|";
+                break;
+            case LogLevel.None:
+                header += "    |";
                 break;
         }
 
@@ -369,7 +374,7 @@ public class FileLoggerProvider : ILoggerProvider, IDisposable
     /// </summary>
     /// <param name="message">Message to be written.</param>
     /// <param name="logLevel">Log level specification. If unspecified, the default is 'INFO'.</param>
-    public void Log(string message, LogLevel logLevel = LogLevel.Information)
+    public void Log(string message, LogLevel logLevel)
     {
         if (string.IsNullOrWhiteSpace(message))
         {
@@ -460,11 +465,12 @@ public class FileLoggerProvider : ILoggerProvider, IDisposable
 
         try
         {
-            _processMessages.Wait(1500);
+            _processMessages.Wait();
         }
         catch (TaskCanceledException) { }
         catch (AggregateException ex) when (ex.InnerExceptions.Count == 1 && ex.InnerExceptions[0] is TaskCanceledException) { }
 
+        _loggers.Clear();
         Close();
     }
 }

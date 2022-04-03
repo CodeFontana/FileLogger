@@ -1,54 +1,62 @@
-﻿using FileLoggerLibrary;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
-namespace Microsoft.Extensions.Logging;
+namespace FileLoggerLibrary;
 
 public static class FileLoggerExtensions
 {
-    public static ILoggingBuilder AddFileLogger(this ILoggingBuilder builder, string logName)
+    public static ILoggingBuilder AddFileLogger(this ILoggingBuilder builder, string name)
     {
-        builder.Services.AddSingleton(new FileLoggerProvider(logName));
-        builder.Services.AddTransient<ILoggerProvider>(x => x.GetRequiredService<FileLoggerProvider>());
-        builder.Services.AddTransient(x => x.GetRequiredService<FileLoggerProvider>().CreateFileLogger(logName));
+        builder.ClearProviders();
+        builder.Services.AddSingleton<ILoggerProvider>(new FileLoggerProvider(name));
+        builder.SetMinimumLevel(LogLevel.Trace);
         return builder;
     }
 
-    public static ILoggingBuilder AddFileLogger(this ILoggingBuilder builder, string logName, string logFolder)
+    public static ILoggingBuilder AddFileLogger(this ILoggingBuilder builder, string name, string folder)
     {
-        builder.Services.AddSingleton(new FileLoggerProvider(logName, logFolder));
-        builder.Services.AddTransient<ILoggerProvider>(x => x.GetRequiredService<FileLoggerProvider>());
-        builder.Services.AddTransient(x => x.GetRequiredService<FileLoggerProvider>().CreateFileLogger(logName));
+        builder.ClearProviders();
+        builder.Services.AddSingleton<ILoggerProvider>(new FileLoggerProvider(name, folder));
+        builder.SetMinimumLevel(LogLevel.Trace);
         return builder;
     }
 
-    public static ILoggingBuilder AddFileLogger(this ILoggingBuilder builder, string logName, string logFolder, long logMaxBytes)
+    public static ILoggingBuilder AddFileLogger(this ILoggingBuilder builder, string name, string folder, long maxBytes)
     {
-        builder.Services.AddSingleton(new FileLoggerProvider(logName, logFolder, logMaxBytes));
-        builder.Services.AddTransient<ILoggerProvider>(x => x.GetRequiredService<FileLoggerProvider>());
-        builder.Services.AddTransient(x => x.GetRequiredService<FileLoggerProvider>().CreateFileLogger(logName));
+        builder.ClearProviders();
+        builder.Services.AddSingleton<ILoggerProvider>(new FileLoggerProvider(name, folder, maxBytes));
+        builder.SetMinimumLevel(LogLevel.Trace);
         return builder;
     }
 
-    public static ILoggingBuilder AddFileLogger(this ILoggingBuilder builder, string logName, string logFolder, long logMaxBytes, uint logMaxCount)
+    public static ILoggingBuilder AddFileLogger(this ILoggingBuilder builder, string name, string folder, long maxBytes, uint maxCount)
     {
-        builder.Services.AddSingleton(new FileLoggerProvider(logName, logFolder, logMaxBytes, logMaxCount));
-        builder.Services.AddTransient<ILoggerProvider>(x => x.GetRequiredService<FileLoggerProvider>());
-        builder.Services.AddTransient(x => x.GetRequiredService<FileLoggerProvider>().CreateFileLogger(logName));
+        builder.ClearProviders();
+        builder.Services.AddSingleton<ILoggerProvider>(new FileLoggerProvider(name, folder, maxBytes, maxCount));
+        builder.SetMinimumLevel(LogLevel.Trace);
+        return builder;
+    }
+
+    public static ILoggingBuilder AddFileLogger(this ILoggingBuilder builder, string name, string folder, long maxBytes, uint maxCount, LogLevel minLevel)
+    {
+        builder.ClearProviders();
+        builder.Services.AddSingleton<ILoggerProvider>(new FileLoggerProvider(name, folder, maxBytes, maxCount, minLevel));
+        builder.SetMinimumLevel(minLevel);
         return builder;
     }
 
     public static ILoggingBuilder AddFileLogger(this ILoggingBuilder builder, IConfiguration configuration, Action<FileLoggerOptions> configure = null)
     {
+        builder.ClearProviders();
         FileLoggerProvider fileLoggerProvider = CreateFromConfiguration(configuration, configure = null);
 
         if (fileLoggerProvider != null)
         {
-            builder.Services.AddSingleton(fileLoggerProvider);
-            builder.Services.AddTransient<ILoggerProvider>(x => x.GetRequiredService<FileLoggerProvider>());
-            builder.Services.AddTransient(x => x.GetRequiredService<FileLoggerProvider>().CreateFileLogger(fileLoggerProvider.LogName));
+            builder.Services.AddSingleton<ILoggerProvider>(fileLoggerProvider);
         }
 
+        builder.SetMinimumLevel(fileLoggerProvider.MinLevel);
         return builder;
     }
 
@@ -63,40 +71,52 @@ public static class FileLoggerExtensions
 
         FileLoggerOptions options = new();
 
-        string logName = fileLogger["LogName"];
+        string logName = fileLogger["Name"];
 
         if (string.IsNullOrWhiteSpace(logName) == false)
         {
-            options.LogName = logName;
+            options.Name = logName;
         }
         else
         {
             return null;
         }
 
-        string logFolder = fileLogger["LogFolder"];
+        string logFolder = fileLogger["Folder"];
 
         if (string.IsNullOrWhiteSpace(logFolder) == false)
         {
-            options.LogFolder = logFolder;
+            options.Folder = logFolder;
         }
 
-        string logMaxBytes = fileLogger["LogMaxBytes"];
+        string logMaxBytes = fileLogger["MaxBytes"];
 
         if (string.IsNullOrWhiteSpace(logMaxBytes) == false && long.TryParse(logMaxBytes, out long maxBytes))
         {
-            options.LogMaxBytes = maxBytes;
+            options.MaxBytes = maxBytes;
         }
 
-        string logMaxCount = fileLogger["LogMaxCount"];
+        string logMaxCount = fileLogger["MaxCount"];
 
         if (string.IsNullOrWhiteSpace(logMaxCount) == false && uint.TryParse(logMaxCount, out uint maxFiles))
         {
-            options.LogMaxCount = maxFiles;
+            options.MaxCount = maxFiles;
         }
 
-        configure?.Invoke(options);
+        string minLevel = fileLogger["MinLevel"];
 
+        options.MinLevel = minLevel.ToLower() switch
+        {
+            "trace" => LogLevel.Trace,
+            "warning" => LogLevel.Warning,
+            "debug" => LogLevel.Debug,
+            "error" => LogLevel.Error,
+            "critical" => LogLevel.Critical,
+            "none" => LogLevel.None,
+            _ => LogLevel.Information,
+        };
+
+        configure?.Invoke(options);
         return new FileLoggerProvider(options);
     }
 }

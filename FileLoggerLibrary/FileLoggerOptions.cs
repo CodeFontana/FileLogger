@@ -1,4 +1,6 @@
-﻿namespace FileLoggerLibrary;
+﻿using Microsoft.Extensions.Logging;
+
+namespace FileLoggerLibrary;
 
 public class FileLoggerOptions
 {
@@ -8,7 +10,7 @@ public class FileLoggerOptions
     /// A log name is required, no default will be provided.
     /// </remarks>
     /// </summary>
-    public string LogName { get; set; }
+    public string Name { get; set; }
 
     /// <summary>
     /// Determines the log file location.
@@ -17,15 +19,20 @@ public class FileLoggerOptions
     /// at the path of the currently exeecuting process.
     /// </remarks>
     /// </summary>
-    public string LogFolder { get; set; } = "";
+    public string Folder { get; set; } = "";
 
     /// <summary>
     /// Determines the maximum size, in bytes, of an individual log file.
     /// </summary>
-    public long LogMaxBytes { get; set; } = 50 * 1000000;
+    public long MaxBytes { get; set; } = 50 * 1048576;
 
     /// <summary>
     /// Determines the maximum number of log files.
     /// </summary>
-    public uint LogMaxCount { get; set; } = 10;
+    public uint MaxCount { get; set; } = 10;
+
+    /// <summary>
+    /// Determines the minimum logging level to be logged.
+    /// </summary>
+    public LogLevel MinLevel { get; set; } = LogLevel.Trace;
 }
