@@ -6,7 +6,7 @@ namespace FileLoggerLibrary;
 internal class FileLoggerProvider : ILoggerProvider, IDisposable
 {
     private readonly ConcurrentDictionary<string, FileLogger> _loggers =  new();
-    private readonly BlockingCollection<string> _messageQueue = new(1024);
+    private readonly BlockingCollection<LogMessage> _messageQueue = new(1024);
     private readonly Task _processMessages;
     private FileStream _logStream = null;
     private StreamWriter _logWriter = null;
@@ -112,7 +112,7 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
     /// </summary>
     private void DequeueMessages()
     {
-        foreach (string message in _messageQueue.GetConsumingEnumerable())
+        foreach (LogMessage message in _messageQueue.GetConsumingEnumerable())
         {
             long logSizeBytes = new FileInfo(LogFilename).Length;
 
@@ -134,7 +134,7 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
     /// on with business.
     /// </summary>
     /// <param name="message"></param>
-    private void EnqueueMessage(string message)
+    private void EnqueueMessage(LogMessage message)
     {
         if (_messageQueue.IsAddingCompleted == false)
         {
@@ -312,160 +312,18 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
     }
 
     /// <summary>
-    /// Generates a standard preamble for each log message. The preamble includes
-    /// the current timestamp, a prefix and a formatted string with the specified
-    /// log level. This method ensures log messages are consistently formatted.
-    /// </summary>
-    /// <param name="prefix">Message prefix.</param>
-    /// <param name="entryType">The log level being annotated in the message preamble.</param>
-    /// <returns>A consistently formatted preamble for human consumption.</returns>
-    public static string MsgHeader(LogLevel logLevel)
-    {
-        string header = DateTime.Now.ToString("yyyy-MM-dd--HH.mm.ss|");
-
-        switch (logLevel)
-        {
-            case LogLevel.Trace:
-                header += "TRCE|";
-                break;
-            case LogLevel.Warning:
-                header += "WARN|";
-                break;
-            case LogLevel.Debug:
-                header += "DBUG|";
-                break;
-            case LogLevel.Information:
-                header += "INFO|";
-                break;
-            case LogLevel.Error:
-                header += "FAIL|";
-                break;
-            case LogLevel.Critical:
-                header += "CRIT|";
-                break;
-            case LogLevel.None:
-                header += "    |";
-                break;
-        }
-
-        return header;
-    }
-
-    /// <summary>
-    /// Indents multi-line messages to align with the message header, for
-    /// easier reading when glancing at log files.
-    /// </summary>
-    /// <param name="header">Header text for length measurement.</param>
-    /// <param name="message">Message text.</param>
-    /// <returns></returns>
-    private static string PadMessage(string header, string message)
-    {
-        string output;
-
-        if (message.Contains(Environment.NewLine))
-        {
-            string[] splitMsg = message.Split(new char[] { '\n' });
-
-            for (int i = 1; i < splitMsg.Length; i++)
-            {
-                splitMsg[i] = new String(' ', header.Length) + splitMsg[i];
-            }
-
-            output = header + string.Join(Environment.NewLine, splitMsg);
-        }
-        else
-        {
-            output = header + message;
-        }
-
-        return output;
-    }
-
-    /// <summary>
     /// Logs a message.
     /// </summary>
     /// <param name="message">Message to be written.</param>
     /// <param name="logLevel">Log level specification. If unspecified, the default is 'INFO'.</param>
-    public void Log(string message, LogLevel logLevel)
+    public void Log(LogMessage message)
     {
-        if (string.IsNullOrWhiteSpace(message))
+        if (string.IsNullOrWhiteSpace(message.Message))
         {
             return;
         }
 
-        string header = MsgHeader(logLevel);
-        string output = PadMessage(header, message);
-
-        EnqueueMessage(output);
-    }
-
-    /// <summary>
-    /// Logs an exception message.
-    /// </summary>
-    /// <param name="e">Exception to be logged.</param>
-    /// <param name="message">Additional message for debugging purposes.</param>
-    public void Log(Exception e, string message)
-    {
-        string header = MsgHeader(LogLevel.Error);
-        string excMessage = PadMessage(header, e.Message);
-        string usrMessage = PadMessage(header, message);
-
-        EnqueueMessage(excMessage);
-        EnqueueMessage(usrMessage);
-    }
-
-    /// <summary>
-    /// Logs a critical log message.
-    /// </summary>
-    /// <param name="message">The message.</param>
-    public void LogCritical(string message)
-    {
-        Log(message, LogLevel.Critical);
-    }
-
-    /// <summary>
-    /// Logs a debug log message.
-    /// </summary>
-    /// <param name="message">The message.</param>
-    public void LogDebug(string message)
-    {
-        Log(message, LogLevel.Debug);
-    }
-
-    /// <summary>
-    /// Logs an error log message.
-    /// </summary>
-    /// <param name="message">The message.</param>
-    public void LogError(string message)
-    {
-        Log(message, LogLevel.Error);
-    }
-
-    /// <summary>
-    /// Logs an informational log message.
-    /// </summary>
-    /// <param name="message">The message.</param>
-    public void LogInformation(string message)
-    {
-        Log(message, LogLevel.Information);
-    }
-
-    /// <summary>
-    /// Logs a trace log message.
-    /// </summary>
-    /// <param name="message">The message.</param>
-    public void LogTrace(string message)
-    {
-        Log(message, LogLevel.Trace);
-    }
-
-    /// <summary>
-    /// Logs a warning log message.
-    /// </summary>
-    /// <param name="message">The message.</param>
-    public void LogWarning(string message)
-    {
-        Log(message, LogLevel.Warning);
+        EnqueueMessage(message);
     }
 
     /// <summary>
