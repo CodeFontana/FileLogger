@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 
 namespace FileLoggerLibrary;
 
-public class FileLoggerProvider : ILoggerProvider, IDisposable
+internal class FileLoggerProvider : ILoggerProvider, IDisposable
 {
     private readonly ConcurrentDictionary<string, FileLogger> _loggers =  new();
     private readonly BlockingCollection<string> _messageQueue = new(1024);
@@ -12,6 +12,18 @@ public class FileLoggerProvider : ILoggerProvider, IDisposable
     private StreamWriter _logWriter = null;
     private readonly object _lockObj = new();
     private bool _rollMode = false;
+
+    public Dictionary<LogLevel, ConsoleColor> LogLevels { get; set; } = new()
+    {
+        [LogLevel.Trace] = ConsoleColor.Gray,
+        [LogLevel.Debug] = ConsoleColor.Blue,
+        [LogLevel.Information] = ConsoleColor.DarkGreen,
+        [LogLevel.Warning] = ConsoleColor.Cyan,
+        [LogLevel.Error] = ConsoleColor.Red,
+        [LogLevel.Critical] = ConsoleColor.Magenta,
+        [LogLevel.None] = ConsoleColor.White
+
+    };
 
     public string LogName { get; private set; }
     public string LogFilename { get; private set; }
@@ -79,7 +91,7 @@ public class FileLoggerProvider : ILoggerProvider, IDisposable
         Open();
 
         // Start processing message queue
-        _processMessages = Task.Factory.StartNew(ProcessQueue, this, TaskCreationOptions.LongRunning);
+        _processMessages = Task.Factory.StartNew(DequeueMessages, this, TaskCreationOptions.LongRunning);
     }
 
     /// <summary>
@@ -88,17 +100,17 @@ public class FileLoggerProvider : ILoggerProvider, IDisposable
     /// will be processed.
     /// </summary>
     /// <param name="state"></param>
-    private static void ProcessQueue(object state)
+    private static void DequeueMessages(object state)
     {
         FileLoggerProvider fileLogger = (FileLoggerProvider)state;
-        fileLogger.ProcessQueue();
+        fileLogger.DequeueMessages();
     }
 
     /// <summary>
     /// Method for processing the queue of log messages and writing them out to the console
     /// and to file.
     /// </summary>
-    private void ProcessQueue()
+    private void DequeueMessages()
     {
         foreach (string message in _messageQueue.GetConsumingEnumerable())
         {
