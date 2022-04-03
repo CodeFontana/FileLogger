@@ -32,7 +32,7 @@ public class FileLogger : ILogger
     /// <returns></returns>
     public bool IsEnabled(LogLevel logLevel)
     {
-        return logLevel >= _fileLoggerProvider.MinLevel;
+        return logLevel >= _fileLoggerProvider.LogMinLevel;
     }
 
     /// <summary>

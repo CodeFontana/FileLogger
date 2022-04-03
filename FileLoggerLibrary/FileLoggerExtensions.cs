@@ -14,11 +14,27 @@ public static class FileLoggerExtensions
         return builder;
     }
 
+    public static ILoggingBuilder AddFileLogger(this ILoggingBuilder builder, string name, LogLevel minLevel)
+    {
+        builder.ClearProviders();
+        builder.Services.AddSingleton<ILoggerProvider, FileLoggerProvider>(sp => new FileLoggerProvider(name));
+        builder.SetMinimumLevel(minLevel);
+        return builder;
+    }
+
     public static ILoggingBuilder AddFileLogger(this ILoggingBuilder builder, string name, string folder)
     {
         builder.ClearProviders();
         builder.Services.AddSingleton<ILoggerProvider, FileLoggerProvider>(sp => new FileLoggerProvider(name, folder));
         builder.SetMinimumLevel(LogLevel.Trace);
+        return builder;
+    }
+    
+    public static ILoggingBuilder AddFileLogger(this ILoggingBuilder builder, string name, string folder, LogLevel minLevel)
+    {
+        builder.ClearProviders();
+        builder.Services.AddSingleton<ILoggerProvider, FileLoggerProvider>(sp => new FileLoggerProvider(name, folder));
+        builder.SetMinimumLevel(minLevel);
         return builder;
     }
 
@@ -56,7 +72,7 @@ public static class FileLoggerExtensions
             builder.Services.AddSingleton<ILoggerProvider>(fileLoggerProvider);
         }
 
-        builder.SetMinimumLevel(fileLoggerProvider.MinLevel);
+        builder.SetMinimumLevel(fileLoggerProvider.LogMinLevel);
         return builder;
     }
 
@@ -75,7 +91,7 @@ public static class FileLoggerExtensions
 
         if (string.IsNullOrWhiteSpace(logName) == false)
         {
-            options.Name = logName;
+            options.LogName = logName;
         }
         else
         {
@@ -86,26 +102,26 @@ public static class FileLoggerExtensions
 
         if (string.IsNullOrWhiteSpace(logFolder) == false)
         {
-            options.Folder = logFolder;
+            options.LogFolder = logFolder;
         }
 
         string logMaxBytes = fileLogger["MaxBytes"];
 
         if (string.IsNullOrWhiteSpace(logMaxBytes) == false && long.TryParse(logMaxBytes, out long maxBytes))
         {
-            options.MaxBytes = maxBytes;
+            options.LogMaxBytes = maxBytes;
         }
 
         string logMaxCount = fileLogger["MaxCount"];
 
         if (string.IsNullOrWhiteSpace(logMaxCount) == false && uint.TryParse(logMaxCount, out uint maxFiles))
         {
-            options.MaxCount = maxFiles;
+            options.LogMaxCount = maxFiles;
         }
 
         string minLevel = fileLogger["MinLevel"];
 
-        options.MinLevel = minLevel.ToLower() switch
+        options.LogMinLevel = minLevel.ToLower() switch
         {
             "trace" => LogLevel.Trace,
             "warning" => LogLevel.Warning,
