@@ -26,6 +26,7 @@ internal class Program
                 .ConfigureLogging(logging =>
                 {
                     logging.AddFileLogger("FileLoggerDemo");
+                    //logging.AddFileLogger("FileLoggerDemo", Microsoft.Extensions.Logging.LogLevel.Warning);
                     //logging.AddFileLogger("FileLoggerDemo", $@"{Environment.CurrentDirectory}\log", 50 * 1048576, 10, LogLevel.Trace);
                 })
                 .ConfigureServices((hostContext, services) =>
