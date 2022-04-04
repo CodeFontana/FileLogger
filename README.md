@@ -55,8 +55,8 @@ logging.AddFileLogger(configure =>
 ```
 
 ## Rolling Log Files
-'LogMaxBytes': Specify maximum size, in bytes, of each log file.
-'LogMaxCount': Specify maximum log count, before overwritting existing log files.
+'LogMaxBytes': Specify maximum size, in bytes, of each log file.  
+'LogMaxCount': Specify maximum log count, before overwritting existing log files.  
 
 ## Indentation
 Turned on by default:
