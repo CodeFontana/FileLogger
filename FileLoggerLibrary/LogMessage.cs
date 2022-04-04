@@ -9,7 +9,8 @@ internal class LogMessage
     public string CategoryName { get; init; }
     public string Header { get; init; }
     public string Message { get; init; }
-    public string OutputMessage { get; init; }
+    public string PaddedMessage { get; init; }
+    public string FullMessage { get; init; }
 
     public LogMessage(LogLevel logLevel, string categoryName, string message)
     {
@@ -18,7 +19,8 @@ internal class LogMessage
         Message = message;
         LogLevel = logLevel;
         Header = $"{TimeStamp}|{LogLevelToString(logLevel)}|{categoryName}|";
-        OutputMessage = PadMessage(Header, Message);
+        PaddedMessage = PadMessage(Header, Message);
+        FullMessage = $"{Header}{PaddedMessage}";
     }
 
     /// <summary>
@@ -72,20 +74,20 @@ internal class LogMessage
     {
         string output;
 
-        if (message.Contains(Environment.NewLine))
+        if (message.Contains("\r\n") || message.Contains('\n'))
         {
-            string[] splitMsg = message.Split(new char[] { '\n' });
+            string[] splitMsg = message.Replace("\r\n", "\n").Split(new char[] { '\n' });
 
             for (int i = 1; i < splitMsg.Length; i++)
             {
                 splitMsg[i] = new String(' ', header.Length) + splitMsg[i];
             }
 
-            output = header + string.Join(Environment.NewLine, splitMsg);
+            output = string.Join(Environment.NewLine, splitMsg);
         }
         else
         {
-            output = header + message;
+            output = message;
         }
 
         return output;
@@ -93,6 +95,6 @@ internal class LogMessage
 
     public override string ToString()
     {
-        return OutputMessage;
+        return FullMessage;
     }
 }

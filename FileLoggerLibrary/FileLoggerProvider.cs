@@ -124,8 +124,13 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
             lock (_lockObj)
             {
                 ConsoleColor originalColor = Console.ForegroundColor;
+                Console.Write($"{message.TimeStamp}|");
                 Console.ForegroundColor = LogLevels[message.LogLevel];
-                Console.WriteLine(message);
+                Console.Write(LogMessage.LogLevelToString(message.LogLevel));
+                Console.ForegroundColor = originalColor;
+                Console.Write($"|{message.CategoryName}|");
+                Console.ForegroundColor = LogLevels[message.LogLevel];
+                Console.WriteLine(message.PaddedMessage);
                 Console.ForegroundColor = originalColor;
                 _logWriter.WriteLine(message);
             }
