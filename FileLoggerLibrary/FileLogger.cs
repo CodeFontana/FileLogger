@@ -47,7 +47,7 @@ internal class FileLogger : ILogger
     }
 
     /// <summary>
-    /// Formats the message and submits it to the Log Provider's Log() method.
+    /// Formats the message and submits it to the LoggerProviders Log() method.
     /// </summary>
     /// <param name="message">The message.</param>
     /// <param name="logLevel">The log level entry.</param>
