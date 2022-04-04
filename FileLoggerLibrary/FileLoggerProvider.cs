@@ -16,7 +16,7 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
     private readonly object _lockObj = new();
     private bool _rollMode = false;
 
-    public Dictionary<LogLevel, ConsoleColor> LogLevels { get; set; } = new()
+    public Dictionary<LogLevel, ConsoleColor> LogLevelColors { get; set; } = new()
     {
         [LogLevel.Trace] = ConsoleColor.Cyan,
         [LogLevel.Debug] = ConsoleColor.Blue,
@@ -25,7 +25,6 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
         [LogLevel.Error] = ConsoleColor.Red,
         [LogLevel.Critical] = ConsoleColor.DarkRed,
         [LogLevel.None] = ConsoleColor.White
-
     };
 
     public string LogName { get; private set; }
@@ -128,11 +127,11 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
             {
                 ConsoleColor originalColor = Console.ForegroundColor;
                 Console.Write($"{message.TimeStamp}|");
-                Console.ForegroundColor = LogLevels[message.LogLevel];
+                Console.ForegroundColor = LogLevelColors[message.LogLevel];
                 Console.Write(LogMessage.LogLevelToString(message.LogLevel));
                 Console.ForegroundColor = originalColor;
                 Console.Write($"|{message.CategoryName}|");
-                Console.ForegroundColor = LogLevels[message.LogLevel];
+                Console.ForegroundColor = LogLevelColors[message.LogLevel];
                 Console.WriteLine(message.PaddedMessage);
                 Console.ForegroundColor = originalColor;
                 _logWriter.WriteLine(message);
