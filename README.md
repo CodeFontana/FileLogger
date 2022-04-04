@@ -2,7 +2,7 @@
 Simple ILogger implementation, providing asynchronous and configurable File and Console logging capabilities.
 
 ## Configuration
-Using appsettings.json...
+Example appsettings.json:
 ```
 {
   "Logging": {
@@ -29,7 +29,7 @@ Using appsettings.json...
 }
 ```
   
-Using IHostBuilder...
+Using IHostBuilder:
 ```
 logging.AddFileLogger(configure =>
   {
@@ -53,3 +53,40 @@ logging.AddFileLogger(configure =>
     };
   });
 ```
+
+## Rolling Log Files
+'LogMaxBytes': Specify maximum size, in bytes, of each log file.
+'LogMaxCount': Specify maximum log count, before overwritting existing log files.
+
+## Indentation
+Turned on by default:
+```
+2022-04-04--18.10.20|INFO|FileLoggerDemo.App|{
+                                               "Date": "4/4/2022",
+                                               "Location": "Center Moriches",
+                                               "TemperatureCelsius": 20,
+                                               "Summary": "Nice"
+                                             }
+```
+  
+If turned off:
+```
+2022-04-04--18.11.19|INFO|FileLoggerDemo.App|{
+  "Date": "4/4/2022",
+  "Location": "Center Moriches",
+  "TemperatureCelsius": 20,
+  "Summary": "Nice"
+}
+```
+
+## Console Logging and Colors
+Turned on by default, log messages will also be written to the console with default coloring:
+```
+![image](https://user-images.githubusercontent.com/41308769/161640636-d0f3ac33-da06-4e6a-80d4-797e443fa89f.png)
+```
+
+Console colors are customizable via IConfiguration or IHostBuilder implementation.
+
+## License
+Copyright 2022, Brian Fontana
+Distributed under the MIT license
