@@ -8,7 +8,6 @@ public static class FileLoggerExtensions
 {
     public static ILoggingBuilder AddFileLogger(this ILoggingBuilder builder, string name)
     {
-        builder.ClearProviders();
         builder.Services.AddSingleton<ILoggerProvider, FileLoggerProvider>(sp => new FileLoggerProvider(name));
         builder.SetMinimumLevel(LogLevel.Trace);
         return builder;
@@ -16,7 +15,6 @@ public static class FileLoggerExtensions
 
     public static ILoggingBuilder AddFileLogger(this ILoggingBuilder builder, string name, LogLevel minLevel)
     {
-        builder.ClearProviders();
         builder.Services.AddSingleton<ILoggerProvider, FileLoggerProvider>(sp => new FileLoggerProvider(name));
         builder.SetMinimumLevel(minLevel);
         return builder;
@@ -24,7 +22,6 @@ public static class FileLoggerExtensions
 
     public static ILoggingBuilder AddFileLogger(this ILoggingBuilder builder, string name, string folder)
     {
-        builder.ClearProviders();
         builder.Services.AddSingleton<ILoggerProvider, FileLoggerProvider>(sp => new FileLoggerProvider(name, folder));
         builder.SetMinimumLevel(LogLevel.Trace);
         return builder;
@@ -32,7 +29,6 @@ public static class FileLoggerExtensions
     
     public static ILoggingBuilder AddFileLogger(this ILoggingBuilder builder, string name, string folder, LogLevel minLevel)
     {
-        builder.ClearProviders();
         builder.Services.AddSingleton<ILoggerProvider, FileLoggerProvider>(sp => new FileLoggerProvider(name, folder));
         builder.SetMinimumLevel(minLevel);
         return builder;
@@ -40,7 +36,6 @@ public static class FileLoggerExtensions
 
     public static ILoggingBuilder AddFileLogger(this ILoggingBuilder builder, string name, string folder, long maxBytes)
     {
-        builder.ClearProviders();
         builder.Services.AddSingleton<ILoggerProvider, FileLoggerProvider>(sp => new FileLoggerProvider(name, folder, maxBytes));
         builder.SetMinimumLevel(LogLevel.Trace);
         return builder;
@@ -48,7 +43,6 @@ public static class FileLoggerExtensions
 
     public static ILoggingBuilder AddFileLogger(this ILoggingBuilder builder, string name, string folder, long maxBytes, uint maxCount)
     {
-        builder.ClearProviders();
         builder.Services.AddSingleton<ILoggerProvider, FileLoggerProvider>(sp => new FileLoggerProvider(name, folder, maxBytes, maxCount));
         builder.SetMinimumLevel(LogLevel.Trace);
         return builder;
@@ -56,7 +50,6 @@ public static class FileLoggerExtensions
 
     public static ILoggingBuilder AddFileLogger(this ILoggingBuilder builder, string name, string folder, long maxBytes, uint maxCount, LogLevel minLevel)
     {
-        builder.ClearProviders();
         builder.Services.AddSingleton<ILoggerProvider, FileLoggerProvider>(sp => new FileLoggerProvider(name, folder, maxBytes, maxCount, minLevel));
         builder.SetMinimumLevel(minLevel);
         return builder;
@@ -64,7 +57,6 @@ public static class FileLoggerExtensions
 
     public static ILoggingBuilder AddFileLogger(this ILoggingBuilder builder, IConfiguration configuration, Action<FileLoggerOptions> configure = null)
     {
-        builder.ClearProviders();
         FileLoggerProvider fileLoggerProvider = CreateFromConfiguration(configuration, configure = null);
 
         if (fileLoggerProvider != null)
