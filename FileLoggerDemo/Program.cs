@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace FileLoggerDemo;
 
@@ -25,9 +26,28 @@ internal class Program
                 })
                 .ConfigureLogging(logging =>
                 {
-                    logging.AddFileLogger("FileLoggerDemo");
-                    //logging.AddFileLogger("FileLoggerDemo", Microsoft.Extensions.Logging.LogLevel.Warning);
-                    //logging.AddFileLogger("FileLoggerDemo", $@"{Environment.CurrentDirectory}\log", 50 * 1048576, 10, LogLevel.Trace);
+                    logging.ClearProviders();
+                    logging.AddFileLogger(configure =>
+                    {
+                        configure.LogName = "FileLoggerDemo";
+                        configure.LogFolder = $@"{Environment.CurrentDirectory}\log";
+                        configure.LogMaxBytes = 50 * 1048576;
+                        configure.LogMaxCount = 10;
+                        configure.LogMinLevel = LogLevel.Trace;
+                        configure.IndentMultilineMessages = true;
+                        configure.ConsoleLogging = true;
+                        configure.EnableConsoleColors = true;
+                        configure.LogLevelColors = new Dictionary<LogLevel, ConsoleColor>()
+                        {
+                            [LogLevel.Trace] = ConsoleColor.Cyan,
+                            [LogLevel.Debug] = ConsoleColor.Blue,
+                            [LogLevel.Information] = ConsoleColor.Green,
+                            [LogLevel.Warning] = ConsoleColor.Yellow,
+                            [LogLevel.Error] = ConsoleColor.Red,
+                            [LogLevel.Critical] = ConsoleColor.DarkRed,
+                            [LogLevel.None] = ConsoleColor.White
+                        };
+                    });
                 })
                 .ConfigureServices((hostContext, services) =>
                 {
