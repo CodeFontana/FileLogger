@@ -1,9 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using System.Diagnostics;
-using System.Globalization;
-using System.Text;
+using System.Text.Json;
 
 namespace FileLoggerDemo;
 public class App : IHostedService
@@ -58,80 +56,16 @@ public class App : IHostedService
         _logger.LogTrace("Hello, Trace!");
         _logger.LogWarning("Hello, Warning!");
 
-        Stopwatch watch = Stopwatch.StartNew();
-
-        for (int i = 0; i < 100000; i++)
+        var weatherForecast = new
         {
-            _logger.LogInformation(LoremIpsum(6, 20, 4, 8));
-        }
+            Date = DateTime.Now.ToShortDateString(),
+            Location = "Center Moriches",
+            TemperatureCelsius = 20,
+            Summary = "Nice"
+        };
 
-        watch.Stop();
-
-        _logger.LogInformation($"Elapsed time: {watch.ElapsedMilliseconds}ms");
+        _logger.LogInformation(JsonSerializer.Serialize(weatherForecast, new JsonSerializerOptions { WriteIndented = true}));
 
         await Task.Delay(1);
-    }
-
-    private bool _firstSentence = false;
-
-    public string LoremIpsum(int minWords = 6, int maxWords = 20, int minSentences = 1, int maxSentences = 6)
-    {
-        var words = new[] {"bacon", "ipsum", "dolor", "amet", "bresola", "tempor", "strip",
-                "leberkas", "excepteur", "irure", "hamburger", "alcatra", "veniam", "turkey",
-                "est", "exercitation", "in", "brian", "sirloin", "chunk", "tri-tip", "salami",
-                "steak", "anim", "chislic", "commodo", "sint", "pastrami", "lorem", "chuck",
-                "exercitation", "sunt", "pork", "qui", "chicken", "minim", "voluptate", "ribeye",
-                "laborum", "andouille", "elit", "spare ribs", "anim", "cow", "id", "ea", "meatloaf",
-                "boudin", "capicola", "adipiscing", "tail", "pork", "belly", "culpa", "shoulder",
-                "drumstick", "buffalo", "prochetta", "esse", "beef ribs", "ham hock", "ham", "hock",
-                "Consectetur", "occaecat", "fatback", "quis", "fugiat", "biltong", "t-bone",
-                "kielbasa", "flank", "voluptate", "pastrami", "ut", "in", "commodo", "adipisicing",
-                "proident", "bresaola", "non", "leberkas", "turducken", "enim", "meatball", "laborum",
-                "nostrud", "strip steak", "officia", "short ribs", "nulla", "ham", "incididunt",
-                "velit", "do", "ex", "dolore", "sunt", "nostrud", "mollit", "bacon", "est",
-                "reprehenderit", "landjaeger", "frankfurter", "shoulder", "ground", "round",
-                "swine", "pariatur", "susage tri-tip", "aute", "chicken tenderloin", "consequat",
-                "venison", "pork belly", "pig tongue", "brisket", "picanha", "ball", "tip",
-                "corned beef" };
-
-        Random rand = new();
-        int numSentences = rand.Next(maxSentences - minSentences) + minSentences;
-        int numWords = rand.Next(maxWords - minWords) + minWords;
-        StringBuilder result = new();
-        CultureInfo cultureInfo = Thread.CurrentThread.CurrentCulture;
-        TextInfo textInfo = cultureInfo.TextInfo;
-
-        if (_firstSentence == false && numSentences > 1 && numWords >= 5)
-        {
-            result.Append("Bacon ipsum dolor amet ");
-            _firstSentence = true;
-        }
-
-        for (int s = 0; s < numSentences; s++)
-        {
-            for (int w = 0; w < numWords; w++)
-            {
-                if (w == 0)
-                {
-                    result.Append(textInfo.ToTitleCase(words[rand.Next(words.Length)]));
-                }
-                else
-                {
-                    result.Append(words[rand.Next(words.Length)]);
-                }
-
-                if (w < numWords - 1)
-                {
-                    result.Append(' ');
-                }
-            }
-
-            if (numSentences > 1)
-            {
-                result.Append(". ");
-            }
-        }
-
-        return result.ToString();
     }
 }
