@@ -55,6 +55,15 @@ public static class FileLoggerExtensions
         return builder;
     }
 
+    public static ILoggingBuilder AddFileLogger(this ILoggingBuilder builder, Action<FileLoggerOptions> configure)
+    {
+        FileLoggerOptions options = new();
+        configure(options);
+        builder.Services.AddSingleton<ILoggerProvider, FileLoggerProvider>(sp => new FileLoggerProvider(options));
+        builder.SetMinimumLevel(options.LogMinLevel);
+        return builder;
+    }
+
     public static ILoggingBuilder AddFileLogger(this ILoggingBuilder builder, IConfiguration configuration, Action<FileLoggerOptions> configure = null)
     {
         FileLoggerProvider fileLoggerProvider = CreateFromConfiguration(configuration, configure = null);
