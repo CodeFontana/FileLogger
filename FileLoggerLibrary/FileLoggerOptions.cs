@@ -46,6 +46,31 @@ public class FileLoggerOptions
     public LogLevel LogMinLevel { get; set; } = LogLevel.Trace;
 
     /// <summary>
+    /// Determines if multiline messages (messages that contain \n),
+    /// should be indented to align with the log message header.
+    /// <remarks>
+    /// By default, indentation is enabled.
+    /// </remarks>
+    /// </summary>
+    public bool IndentMultilineMessages { get; set; } = true;
+
+    /// <summary>
+    /// Enable logging to Console.
+    /// <remarks>
+    /// Default is enabled.
+    /// </remarks>
+    /// </summary>
+    public bool ConsoleLogging { get; set; } = true;
+
+    /// <summary>
+    /// Enable colors in Console logging.
+    /// <remarks>
+    /// Default is to use colors.
+    /// </remarks>
+    /// </summary>
+    public bool EnableConsoleColors { get; set; } = true;
+
+    /// <summary>
     /// Mapping of Microsoft.Extensions.Logging.LogLevel to different
     /// console colors.
     /// </summary>
@@ -59,4 +84,5 @@ public class FileLoggerOptions
         [LogLevel.Critical] = ConsoleColor.DarkRed,
         [LogLevel.None] = ConsoleColor.White
     };
+
 }

@@ -9,6 +9,7 @@ internal class LogMessage
     public string CategoryName { get; init; }
     public string Header { get; init; }
     public string Message { get; init; }
+    public string UnPaddedMessage { get => $"{TimeStamp}|{LogLevelToString(LogLevel)}|{CategoryName}|{Message}"; }
     public string PaddedMessage { get; init; }
     public string FullMessage { get; init; }
 

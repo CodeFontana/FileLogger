@@ -16,6 +16,17 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
     private readonly object _lockObj = new();
     private bool _rollMode = false;
 
+    public string LogName { get; private set; }
+    public string LogFilename { get; private set; }
+    public string LogFolder { get; private set; } = "";
+    public int LogIncrement { get; private set; } = 0;
+    public long LogMaxBytes { get; private set; } = 50 * 1048576;
+    public uint LogMaxCount { get; private set; } = 10;
+    public LogLevel LogMinLevel { get; private set; } = LogLevel.Trace;
+    public bool IndentMultilineMessages { get; set; } = true;
+    public bool ConsoleLogging { get; set; } = true;
+    public bool EnableConsoleColors { get; set; } = true;
+
     public Dictionary<LogLevel, ConsoleColor> LogLevelColors { get; set; } = new()
     {
         [LogLevel.Trace] = ConsoleColor.Cyan,
@@ -26,14 +37,6 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
         [LogLevel.Critical] = ConsoleColor.DarkRed,
         [LogLevel.None] = ConsoleColor.White
     };
-
-    public string LogName { get; private set; }
-    public string LogFilename { get; private set; }
-    public string LogFolder { get; private set; } = "";
-    public int LogIncrement { get; private set; } = 0;
-    public long LogMaxBytes { get; private set; } = 50 * 1048576;
-    public uint LogMaxCount { get; private set; } = 10;
-    public LogLevel LogMinLevel { get; private set; } = LogLevel.Trace;
 
     /// <summary>
     /// Default FileLoggerProvider constructor, instantiates a new log file instance.
@@ -46,28 +49,37 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
     /// <param name="logFolder">Path where logs files will be saved.</param>
     /// <param name="logMaxBytes">Maximum size (in bytes) for the log file. If unspecified, the default is 50MB per log.</param>
     /// <param name="logMaxCount">Maximum count of log files for rotation. If unspecified, the default is 10 logs.</param>
-    /// <param name="logMinLevel">Minimum log level for output.</param>
-    /// <returns></returns>
+    /// <param name="logMinLevel">Minimum log level for output. If unspecified, the default value is LogLevel.Trace.</param>
+    /// <param name="consoleLogging">Enable logging to console. If unspecified, the default value is true.</param>
+    /// <param name="enableConsoleColors">Enable colorful console logging. If unspecified, the default value is true.</param>
+    /// <returns>An initialized FileLoggerProvider</returns>
     public FileLoggerProvider(string logName,
                               string logFolder = null,
                               long logMaxBytes = 50 * 1048576,
                               uint logMaxCount = 10,
-                              LogLevel logMinLevel = LogLevel.Trace) : this(new()
+                              LogLevel logMinLevel = LogLevel.Trace,
+                              bool indentMultilineMessages = true,
+                              bool consoleLogging = true,
+                              bool enableConsoleColors = true) : this(new()
                               {
                                   LogName = logName,
                                   LogFolder = logFolder,
                                   LogMaxBytes = logMaxBytes,
                                   LogMaxCount = logMaxCount,
-                                  LogMinLevel = logMinLevel
+                                  LogMinLevel = logMinLevel,
+                                  IndentMultilineMessages = indentMultilineMessages,
+                                  ConsoleLogging = consoleLogging,
+                                  EnableConsoleColors = enableConsoleColors
                               })
     {
-
+        // Builds FileLoggerOptions object and implements next constructor
     }
 
     /// <summary>
     /// FileLogger constructor, based on FileLoggerOptions configuration.
     /// </summary>
     /// <param name="options">Configuration options to configure the FileLoggerProvider instance.</param>
+    /// <returns>An initialized FileLoggerProvider</returns>
     public FileLoggerProvider(FileLoggerOptions options)
     {
         if (string.IsNullOrWhiteSpace(options.LogFolder))
@@ -90,6 +102,10 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
         LogMaxBytes = options.LogMaxBytes;
         LogMaxCount = options.LogMaxCount;
         LogMinLevel = options.LogMinLevel;
+        IndentMultilineMessages = options.IndentMultilineMessages;
+        ConsoleLogging = options.ConsoleLogging;
+        EnableConsoleColors = options.EnableConsoleColors;
+        LogLevelColors = options.LogLevelColors;
         Open();
 
         // Start processing message queue
@@ -125,16 +141,42 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
 
             lock (_lockObj)
             {
-                ConsoleColor originalColor = Console.ForegroundColor;
-                Console.Write($"{message.TimeStamp}|");
-                Console.ForegroundColor = LogLevelColors[message.LogLevel];
-                Console.Write(LogMessage.LogLevelToString(message.LogLevel));
-                Console.ForegroundColor = originalColor;
-                Console.Write($"|{message.CategoryName}|");
-                Console.ForegroundColor = LogLevelColors[message.LogLevel];
-                Console.WriteLine(message.PaddedMessage);
-                Console.ForegroundColor = originalColor;
-                _logWriter.WriteLine(message);
+                if (ConsoleLogging && EnableConsoleColors)
+                {
+                    ConsoleColor originalColor = Console.ForegroundColor;
+                    Console.Write($"{message.TimeStamp}|");
+                    Console.ForegroundColor = LogLevelColors[message.LogLevel];
+                    Console.Write(LogMessage.LogLevelToString(message.LogLevel));
+                    Console.ForegroundColor = originalColor;
+                    Console.Write($"|{message.CategoryName}|");
+                    Console.ForegroundColor = LogLevelColors[message.LogLevel];
+
+                    if (IndentMultilineMessages)
+                    {
+                        Console.WriteLine(message.PaddedMessage);
+                    }
+                    else
+                    {
+                        Console.WriteLine(message.Message);
+                    }
+                    
+                    Console.ForegroundColor = originalColor;
+                }
+                else if (ConsoleLogging)
+                {
+                    Console.WriteLine(message);
+                }
+
+                if (IndentMultilineMessages)
+                {
+                    _logWriter.WriteLine(message.FullMessage);
+                }
+                else
+                {
+                    _logWriter.WriteLine(message.UnPaddedMessage);
+                }
+
+                
             }
         }
     }
