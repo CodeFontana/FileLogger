@@ -70,7 +70,7 @@ public static class FileLoggerExtensions
 
         if (fileLoggerProvider != null)
         {
-            builder.Services.AddSingleton<ILoggerProvider>(fileLoggerProvider);
+            builder.Services.AddSingleton<ILoggerProvider, FileLoggerProvider>(sp => fileLoggerProvider);
         }
 
         builder.SetMinimumLevel(fileLoggerProvider.LogMinLevel);
@@ -79,7 +79,7 @@ public static class FileLoggerExtensions
 
     private static FileLoggerProvider CreateFromConfiguration(IConfiguration configuration, Action<FileLoggerOptions> configure)
     {
-        IConfigurationSection fileLogger = configuration.GetSection("FileLogger");
+        IConfigurationSection fileLogger = configuration.GetSection("Logging:FileLogger");
 
         if (fileLogger == null)
         {
@@ -88,7 +88,7 @@ public static class FileLoggerExtensions
 
         FileLoggerOptions options = new();
 
-        string logName = fileLogger["Name"];
+        string logName = fileLogger["LogName"];
 
         if (string.IsNullOrWhiteSpace(logName) == false)
         {
@@ -99,41 +99,75 @@ public static class FileLoggerExtensions
             return null;
         }
 
-        string logFolder = fileLogger["Folder"];
+        string logFolder = fileLogger["LogFolder"];
 
         if (string.IsNullOrWhiteSpace(logFolder) == false)
         {
             options.LogFolder = logFolder;
         }
 
-        string logMaxBytes = fileLogger["MaxBytes"];
+        string logMaxBytes = fileLogger["LogMaxBytes"];
 
         if (string.IsNullOrWhiteSpace(logMaxBytes) == false && long.TryParse(logMaxBytes, out long maxBytes))
         {
             options.LogMaxBytes = maxBytes;
         }
 
-        string logMaxCount = fileLogger["MaxCount"];
+        string logMaxCount = fileLogger["LogMaxCount"];
 
         if (string.IsNullOrWhiteSpace(logMaxCount) == false && uint.TryParse(logMaxCount, out uint maxFiles))
         {
             options.LogMaxCount = maxFiles;
         }
 
-        string minLevel = fileLogger["MinLevel"];
-
-        options.LogMinLevel = minLevel.ToLower() switch
+        string minLevel = fileLogger["LogMinLevel"];
+        
+        if (string.IsNullOrWhiteSpace(minLevel) == false && Enum.TryParse(minLevel, out LogLevel level))
         {
-            "trace" => LogLevel.Trace,
-            "warning" => LogLevel.Warning,
-            "debug" => LogLevel.Debug,
-            "error" => LogLevel.Error,
-            "critical" => LogLevel.Critical,
-            "none" => LogLevel.None,
-            _ => LogLevel.Information,
-        };
+            options.LogMinLevel = level;
+        }
 
+        string indentMultilineMessages = fileLogger["IndentMultilineMessages"];
+
+        if (string.IsNullOrWhiteSpace(indentMultilineMessages) == false && bool.TryParse(indentMultilineMessages, out bool indent))
+        {
+            options.IndentMultilineMessages = indent;
+        }
+
+        string consoleLogging = fileLogger["ConsoleLogging"];
+
+        if (string.IsNullOrWhiteSpace(consoleLogging) == false && bool.TryParse(consoleLogging, out bool console))
+        {
+            options.ConsoleLogging = console;
+        }
+
+        string enableConsoleColors = fileLogger["EnableConsoleColors"];
+
+        if (string.IsNullOrWhiteSpace(enableConsoleColors) == false && bool.TryParse(enableConsoleColors, out bool colors))
+        {
+            options.EnableConsoleColors = colors;
+        }
+
+        Dictionary<LogLevel, ConsoleColor> logLevelColors = 
+            fileLogger.GetSection("LogLevelColors").GetChildren().ToDictionary(x =>
+            {
+                Enum.TryParse(x.Key, out LogLevel level);
+                return level;
+            }, 
+            x =>
+            {
+                Enum.TryParse(x.Value, out ConsoleColor color);
+                return color;
+            });
+
+        if (logLevelColors != null)
+        {
+            options.LogLevelColors = logLevelColors;
+        }
+
+        // Override IConfiguration with any provided code-based configuration
         configure?.Invoke(options);
+
         return new FileLoggerProvider(options);
     }
 }
