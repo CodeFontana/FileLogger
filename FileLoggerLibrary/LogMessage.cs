@@ -12,6 +12,13 @@ internal class LogMessage
     public string PaddedMessage { get; init; }
     public string FullMessage { get; init; }
 
+    /// <summary>
+    /// Default constructor, builds a log message and publishes properties
+    /// for each distinct part of the message structure.
+    /// </summary>
+    /// <param name="logLevel"></param>
+    /// <param name="categoryName"></param>
+    /// <param name="message"></param>
     public LogMessage(LogLevel logLevel, string categoryName, string message)
     {
         TimeStamp = DateTime.Now.ToString("yyyy-MM-dd--HH.mm.ss");
@@ -24,13 +31,10 @@ internal class LogMessage
     }
 
     /// <summary>
-    /// Generates a standard preamble for each log message. The preamble includes
-    /// the current timestamp, a prefix and a formatted string with the specified
-    /// log level. This method ensures log messages are consistently formatted.
+    /// Converts a Microsoft.Extensions.Logging.LogLevel to a string representation.
     /// </summary>
-    /// <param name="prefix">Message prefix.</param>
-    /// <param name="entryType">The log level being annotated in the message preamble.</param>
-    /// <returns>A consistently formatted preamble for human consumption.</returns>
+    /// <param name="logLevel">A log level to convert.</param>
+    /// <returns>String representation of the log level.</returns>
     public static string LogLevelToString(LogLevel logLevel)
     {
         string header = "";
@@ -65,7 +69,7 @@ internal class LogMessage
 
     /// <summary>
     /// Indents multi-line messages to align with the message header, for
-    /// easier reading when glancing at log files.
+    /// easier reading when glancing at log messages spanning multiple lines.
     /// </summary>
     /// <param name="header">Header text for length measurement.</param>
     /// <param name="message">Message text.</param>
