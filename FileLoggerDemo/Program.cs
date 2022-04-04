@@ -24,30 +24,35 @@ internal class Program
                     config.AddUserSecrets<Program>(optional: true);
                     config.AddEnvironmentVariables();
                 })
-                .ConfigureLogging(logging =>
+                .ConfigureLogging((context, builder) =>
                 {
-                    logging.ClearProviders();
-                    logging.AddFileLogger(configure =>
-                    {
-                        configure.LogName = "FileLoggerDemo";
-                        configure.LogFolder = $@"{Environment.CurrentDirectory}\log";
-                        configure.LogMaxBytes = 50 * 1048576;
-                        configure.LogMaxCount = 10;
-                        configure.LogMinLevel = LogLevel.Trace;
-                        configure.IndentMultilineMessages = true;
-                        configure.ConsoleLogging = true;
-                        configure.EnableConsoleColors = true;
-                        configure.LogLevelColors = new Dictionary<LogLevel, ConsoleColor>()
-                        {
-                            [LogLevel.Trace] = ConsoleColor.Cyan,
-                            [LogLevel.Debug] = ConsoleColor.Blue,
-                            [LogLevel.Information] = ConsoleColor.Green,
-                            [LogLevel.Warning] = ConsoleColor.Yellow,
-                            [LogLevel.Error] = ConsoleColor.Red,
-                            [LogLevel.Critical] = ConsoleColor.DarkRed,
-                            [LogLevel.None] = ConsoleColor.White
-                        };
-                    });
+                    builder.ClearProviders();
+
+                    // Use IConfiguration (e.g. appsettings.json)
+                    builder.AddFileLogger(context.Configuration);
+
+                    // Use extension method callback
+                    //logging.AddFileLogger(configure =>
+                    //{
+                    //    configure.LogName = "FileLoggerDemo";
+                    //    configure.LogFolder = $@"{Environment.CurrentDirectory}\log";
+                    //    configure.LogMaxBytes = 50 * 1048576;
+                    //    configure.LogMaxCount = 10;
+                    //    configure.LogMinLevel = LogLevel.Trace;
+                    //    configure.IndentMultilineMessages = true;
+                    //    configure.ConsoleLogging = true;
+                    //    configure.EnableConsoleColors = true;
+                    //    configure.LogLevelColors = new Dictionary<LogLevel, ConsoleColor>()
+                    //    {
+                    //        [LogLevel.Trace] = ConsoleColor.Cyan,
+                    //        [LogLevel.Debug] = ConsoleColor.Blue,
+                    //        [LogLevel.Information] = ConsoleColor.Green,
+                    //        [LogLevel.Warning] = ConsoleColor.Yellow,
+                    //        [LogLevel.Error] = ConsoleColor.Red,
+                    //        [LogLevel.Critical] = ConsoleColor.DarkRed,
+                    //        [LogLevel.None] = ConsoleColor.White
+                    //    };
+                    //});
                 })
                 .ConfigureServices((hostContext, services) =>
                 {

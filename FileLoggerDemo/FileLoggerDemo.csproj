@@ -20,6 +20,16 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <None Remove="appSettings.json" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Content Include="appsettings.json">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Content>
+	</ItemGroup>
+
+	<ItemGroup>
 	  <ProjectReference Include="..\FileLoggerLibrary\FileLoggerLibrary.csproj" />
 	</ItemGroup>
 
