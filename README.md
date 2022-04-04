@@ -2,7 +2,7 @@
 Simple ILogger implementation, providing asynchronous and configurable File and Console logging capabilities.
 
 ## Configuration
-Example appsettings.json:
+Example appsettings.json configuration:
 ```
 {
   "Logging": {
@@ -29,7 +29,7 @@ Example appsettings.json:
 }
 ```
   
-Using IHostBuilder:
+Example IHostBuilder implementation:
 ```
 logging.AddFileLogger(configure =>
   {
