@@ -1,10 +1,12 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFramework>net6.0-windows</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>disable</Nullable>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<PackageId>CodeFoxtrot.FileLogger</PackageId>
+		<Product>FileLogger</Product>
 		<Authors>CodeFoxtrot</Authors>
 		<Description>Simple ILogger implementation, providing asynchronous and configurable File and Console logging capabilities.</Description>
 		<Copyright>2022</Copyright>
@@ -13,6 +15,7 @@
 		<RepositoryUrl>https://github.com/CodeFontana/FileLogger</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>CodeFoxtrot Logging Log FileLogger</PackageTags>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -20,14 +23,6 @@
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>
-	</ItemGroup>
-
-	<PropertyGroup>
-		<PackageLicenseFile>LICENSE</PackageLicenseFile>
-	</PropertyGroup>
-
-	<ItemGroup>
-		<None Include="..\LICENSE" Pack="true" PackagePath="" />
 	</ItemGroup>
 
 	<ItemGroup>
