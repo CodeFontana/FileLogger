@@ -81,6 +81,7 @@ If turned off:
 
 ## Console Logging and Colors
 Turned on by default, log messages will also be written to the console with default coloring:  
+  
 ![Console colors](https://user-images.githubusercontent.com/41308769/161640636-d0f3ac33-da06-4e6a-80d4-797e443fa89f.png)
-
+  
 Console colors are customizable via IConfiguration or IHostBuilder implementation.
