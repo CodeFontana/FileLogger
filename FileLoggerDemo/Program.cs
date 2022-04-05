@@ -32,7 +32,7 @@ internal class Program
                     builder.AddFileLogger(context.Configuration);
 
                     // Use extension method callback
-                    //logging.AddFileLogger(configure =>
+                    //logging.AddFileLogger(builder =>
                     //{
                     //    configure.LogName = "FileLoggerDemo";
                     //    configure.LogFolder = $@"{Environment.CurrentDirectory}\log";
