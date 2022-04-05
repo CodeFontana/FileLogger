@@ -11,9 +11,23 @@
 
 ## How to use
 
-### Scenario #1: Using appsettings.json
+### Scenario #1: Quickstart
+The following code will create 10x50MB rolling logs for 'FileLoggerDemo_x.log":
+```
+using FileLoggerLibrary;
+
+...<omitted>...
+
+.ConfigureLogging((context, builder) =>
+  {
+    builder.ClearProviders();
+    builder.AddFileLogger("FileLoggerDemo");
+  })
+```
+
+### Scenario #2: Using appsettings.json
   
-**appsettings.json**
+**appsettings.json** -- all options shown
 ```
 {
   "Logging": {
@@ -45,7 +59,7 @@
 }
 ```
   
-**Program.cs**  
+**Program.cs** -- full file for complete context
 ```
 using FileLoggerLibrary;
 using Microsoft.Extensions.Configuration;
@@ -92,9 +106,9 @@ internal class Program
 }
 ```
   
-### Scenario #2: Using ConfigureLogging
+### Scenario #3: Using ConfigureLogging
   
-**Program.cs**  
+**Program.cs**  -- full file for complete context, all FileLoggerOptions shown
 ```
 using FileLoggerLibrary;
 using Microsoft.Extensions.Configuration;
