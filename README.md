@@ -1,11 +1,22 @@
-# FileLogger -- Simple is Good
-Simple ILogger implementation, providing asynchronous and configurable File and Console logging capabilities.
+# FileLogger - Simple is Good
+* Simple implementation supporting asynchronous Console and File logging.
+* Rolling logs with configurable maximum size, maximum count and append of existing log.
+* Configurable minimum log level.
+* Indent multiline messages for easier reading and analysis.
+* Configurable color scheme for Console log messages, for easier reading.
+
+![Console colors](https://user-images.githubusercontent.com/41308769/161640636-d0f3ac33-da06-4e6a-80d4-797e443fa89f.png)
 
 ## Configuration
-Example appsettings.json configuration:
+**Example appsettings.json configuration:**
 ```
 {
   "Logging": {
+    "LogLevel": {
+    "Default": "Debug",
+    "System": "Information",
+    "Microsoft": "Error"
+    },
     "FileLogger": {
       "LogName": "FileLoggerDemo",
       "LogFolder": "",
@@ -29,7 +40,7 @@ Example appsettings.json configuration:
 }
 ```
   
-Example IHostBuilder implementation:
+**Example IHostBuilder implementation:**
 ```
 logging.AddFileLogger(configure =>
   {
@@ -54,12 +65,8 @@ logging.AddFileLogger(configure =>
   });
 ```
 
-## Rolling Log Files
-'LogMaxBytes': Specify maximum size, in bytes, of each log file.  
-'LogMaxCount': Specify maximum log count, before overwritting existing log files.  
-
-## Indentation
-Turned on by default:
+## Indentation 
+IndentMultilineMessages=**true**
 ```
 2022-04-04--18.10.20|INFO|FileLoggerDemo.App|{
                                                "Date": "4/4/2022",
@@ -69,7 +76,7 @@ Turned on by default:
                                              }
 ```
   
-If turned off:
+IndentMultilineMessages=**false**
 ```
 2022-04-04--18.11.19|INFO|FileLoggerDemo.App|{
   "Date": "4/4/2022",
@@ -79,9 +86,8 @@ If turned off:
 }
 ```
 
-## Console Logging and Colors
-Turned on by default, log messages will also be written to the console with default coloring:  
-  
-![Console colors](https://user-images.githubusercontent.com/41308769/161640636-d0f3ac33-da06-4e6a-80d4-797e443fa89f.png)
-  
-Console colors are customizable via IConfiguration or IHostBuilder implementation.
+## Roadmap
+* Support for Daily, Weekly or Monthly rolling log, up to 1GB maximum single log file.
+
+## Reference
+https://docs.microsoft.com/en-us/dotnet/core/extensions/custom-logging-provider
