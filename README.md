@@ -12,7 +12,7 @@
 ## How to use
 
 ### Scenario #1: Quickstart
-The following code will create 10x50MB rolling logs for 'FileLoggerDemo_x.log":
+The following will create 10x50MB rolling logs for 'FileLoggerDemo_x.log" with default settings:
 ```
 using FileLoggerLibrary;
 
