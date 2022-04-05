@@ -3,7 +3,7 @@
 
 * Simple implementation supporting asynchronous Console and File logging.
 * Rolling logs with configurable maximum size, maximum count and append of existing log.
-* Configurable minimum log level.
+* Configurable default minimum log level.
 * Indent multiline messages for easier reading and analysis.
 * Configurable color scheme for Console log messages, for easier reading.
 
