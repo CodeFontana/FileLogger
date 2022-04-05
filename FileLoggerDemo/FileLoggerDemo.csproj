@@ -5,6 +5,12 @@
 		<TargetFramework>net6.0-windows</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>disable</Nullable>
+		<Description>Demo app for FileLoggerLibrary.</Description>
+		<PackageProjectUrl>https://github.com/CodeFontana/FileLogger</PackageProjectUrl>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<Company>CodeFoxtrot</Company>
+		<Authors>CodeFoxtrot</Authors>
+		<Copyright>2022</Copyright>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -27,6 +33,21 @@
 	  <Content Include="appsettings.json">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </Content>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Include="..\README.md">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </None>
+	</ItemGroup>
+
+	<PropertyGroup>
+		<PackageLicenseFile>LICENSE</PackageLicenseFile>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="..\LICENSE" Pack="true" PackagePath="" />
 	</ItemGroup>
 
 	<ItemGroup>
