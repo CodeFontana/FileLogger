@@ -52,7 +52,6 @@ public class App : IHostedService
         _logger.LogTrace("Hello, Trace!");
         _logger.LogDebug("Hello, Debug!");
         _logger.LogInformation("Hello, World!");
-        _logger.LogInformation("Hello, FileLogger!");
         _logger.LogWarning("Hello, Warning!");
         _logger.LogError("Hello, Error!");
         _logger.LogCritical("Hello, Critical!");
