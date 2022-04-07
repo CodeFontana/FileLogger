@@ -47,6 +47,17 @@ internal class FileLogger : ILogger
     }
 
     /// <summary>
+    /// Formats and writes an informational log message. This is a shorthand for
+    /// the LogInformation() method.
+    /// </summary>
+    /// <param name="message">The message.</param>
+    public void Log(string message)
+    {
+        LogMessage msg = new(LogLevel.Information, _categoryName, message);
+        _fileLoggerProvider.Log(msg);
+    }
+
+    /// <summary>
     /// Formats the message and submits it to the LoggerProviders Log() method.
     /// </summary>
     /// <param name="message">The message.</param>

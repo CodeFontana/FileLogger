@@ -49,12 +49,13 @@ public class App : IHostedService
 
     public async Task Run()
     {
-        _logger.LogCritical("Hello, Critical!");
-        _logger.LogDebug("Hello, Debug!");
-        _logger.LogError("Hello, Error!");
-        _logger.LogInformation("Hello, World!");
         _logger.LogTrace("Hello, Trace!");
+        _logger.LogDebug("Hello, Debug!");
+        _logger.LogInformation("Hello, World!");
+        _logger.LogInformation("Hello, FileLogger!");
         _logger.LogWarning("Hello, Warning!");
+        _logger.LogError("Hello, Error!");
+        _logger.LogCritical("Hello, Critical!");
 
         var weatherForecast = new
         {
