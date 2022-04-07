@@ -14,8 +14,11 @@
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<RepositoryUrl>https://github.com/CodeFontana/FileLogger</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
-		<PackageTags>CodeFoxtrot Logging Log FileLogger</PackageTags>
+		<PackageTags>CodeFoxtrot Logging Log FileLogger Logger</PackageTags>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<Version>1.0.1</Version>
+		<AssemblyVersion>1.0.1.1</AssemblyVersion>
+		<FileVersion>1.0.1.1</FileVersion>
 	</PropertyGroup>
 
 	<ItemGroup>
