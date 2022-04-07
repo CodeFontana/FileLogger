@@ -7,7 +7,8 @@
 * Indent multiline messages for easier reading and analysis.
 * Configurable color scheme for Console log messages, for easier reading.
 
-![Console colors](https://user-images.githubusercontent.com/41308769/161640636-d0f3ac33-da06-4e6a-80d4-797e443fa89f.png)
+![Code sample](https://user-images.githubusercontent.com/41308769/162116432-e100c81b-9c30-41a9-8335-b176355ad4d1.png)
+![Console colors](https://user-images.githubusercontent.com/41308769/162116455-cbd5a37c-bce3-4717-9c50-8c6e74a4777b.png)
 
 ## How to use
 
@@ -32,7 +33,7 @@ using FileLoggerLibrary;
 {
   "Logging": {
     "LogLevel": {
-    "Default": "Debug",
+    "Default": "Trace",
     "System": "Information",
     "Microsoft": "Error"
     },
@@ -41,7 +42,6 @@ using FileLoggerLibrary;
       "LogFolder": "",
       "LogMaxBytes": 52428800,
       "LogMaxCount": 10,
-      "LogMinLevel": "Trace",
       "IndentMultilineMessages": true,
       "ConsoleLogging": true,
       "EnableConsoleColors": true,
