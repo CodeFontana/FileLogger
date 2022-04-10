@@ -199,6 +199,7 @@ IndentMultilineMessages=**false**
 ## Roadmap
 * Support for Daily, Weekly or Monthly rolling log, up to 1GB maximum single log file.
 * Support custom formatter for log message.
+* Multi-platform support for Mac and Linux.
 
 ## Reference
 https://docs.microsoft.com/en-us/dotnet/core/extensions/custom-logging-provider
