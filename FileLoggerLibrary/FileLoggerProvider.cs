@@ -84,9 +84,7 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
     {
         if (string.IsNullOrWhiteSpace(options.LogFolder))
         {
-            string processName = Environment.ProcessPath;
-            string processPath = processName[..processName.LastIndexOf("\\")];
-            LogFolder = processPath + @"\log";
+            LogFolder = Path.Combine(Environment.CurrentDirectory, "log");
         }
         else if (Directory.Exists(options.LogFolder) == false)
         {
@@ -289,7 +287,7 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
             //              to start writing a new file.
             for (int i = 0; i < LogMaxCount; i++)
             {
-                string fileName = $@"{LogFolder}\{LogName}_{i}.log";
+                string fileName = Path.Combine(LogFolder, $"{LogName}_{i}.log");
 
                 if (File.Exists(fileName))
                 {
@@ -313,7 +311,7 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
             }
 
             // Full house? -- Start over from the top.
-            LogFilename = $@"{LogFolder}\{LogName}_0.log";
+            LogFilename = Path.Combine(LogFolder, $"{LogName}_0.log");
             LogIncrement = 0;
         }
         else
@@ -324,12 +322,12 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
             if (LogIncrement + 1 < LogMaxCount)
             {
                 // Next log increment.
-                LogFilename = $@"{LogFolder}\{LogName}_{++LogIncrement}.log";
+                LogFilename = Path.Combine(LogFolder, $"{LogName}_{++LogIncrement}.log");
             }
             else
             {
                 // Start over from the top.
-                LogFilename = $@"{LogFolder}\{LogName}_0.log";
+                LogFilename = Path.Combine(LogFolder, $"{LogName}_0.log");
                 LogIncrement = 0;
             }
         }

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net6.0-windows</TargetFramework>
+		<TargetFramework>net6.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>disable</Nullable>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
@@ -16,9 +16,10 @@
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>CodeFoxtrot Logging Log FileLogger Logger</PackageTags>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<Version>1.0.1</Version>
-		<AssemblyVersion>1.0.1.1</AssemblyVersion>
-		<FileVersion>1.0.1.1</FileVersion>
+		<Version>1.0.2</Version>
+		<AssemblyVersion>1.0.1.2</AssemblyVersion>
+		<FileVersion>1.0.1.2</FileVersion>
+		<Company>CodeFoxtrot</Company>
 	</PropertyGroup>
 
 	<ItemGroup>
