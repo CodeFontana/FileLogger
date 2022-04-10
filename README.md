@@ -1,7 +1,7 @@
 # FileLogger - Simple is Good
 [![Nuget Release](https://img.shields.io/nuget/v/CodeFoxtrot.FileLogger?style=for-the-badge)](https://www.nuget.org/packages/CodeFoxtrot.FileLogger/)
 
-* Simple implementation supporting asynchronous Console and File logging.
+* Cross-platform implementation supporting asynchronous Console and File logging.
 * Rolling logs with configurable maximum size, maximum count and append of existing log.
 * Configurable default minimum log level.
 * Indent multiline messages for easier reading and analysis.
