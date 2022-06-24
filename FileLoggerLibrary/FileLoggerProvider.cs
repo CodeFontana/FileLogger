@@ -50,6 +50,7 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
     /// <param name="logMaxBytes">Maximum size (in bytes) for the log file. If unspecified, the default is 50MB per log.</param>
     /// <param name="logMaxCount">Maximum count of log files for rotation. If unspecified, the default is 10 logs.</param>
     /// <param name="logMinLevel">Minimum log level for output. If unspecified, the default value is LogLevel.Trace.</param>
+    /// <param name="indentMultilineMessages">Indent multiline messages. If unspecified, the default value is true.</param>
     /// <param name="consoleLogging">Enable logging to console. If unspecified, the default value is true.</param>
     /// <param name="enableConsoleColors">Enable colorful console logging. If unspecified, the default value is true.</param>
     /// <returns>An initialized FileLoggerProvider</returns>
