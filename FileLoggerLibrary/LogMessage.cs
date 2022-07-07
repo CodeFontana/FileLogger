@@ -2,70 +2,83 @@
 
 namespace FileLoggerLibrary;
 
-internal class LogMessage
+public class LogMessage
 {
-    public string TimeStamp { get; init; }
+    public string Message { get; init; }
+    public Exception Exception { get; init; }
     public LogLevel LogLevel { get; init; }
     public string CategoryName { get; init; }
+    public EventId EventId { get; init; }
+    public string TimeStamp { get; init; }
     public string Header { get; init; }
-    public string Message { get; init; }
-    public string UnPaddedMessage { get => $"{TimeStamp}|{LogLevelToString(LogLevel)}|{CategoryName}|{Message}"; }
     public string PaddedMessage { get; init; }
-    public string FullMessage { get; init; }
 
     /// <summary>
     /// Default constructor, builds a log message and publishes properties
     /// for each distinct part of the message structure.
     /// </summary>
-    /// <param name="logLevel"></param>
-    /// <param name="categoryName"></param>
-    /// <param name="message"></param>
-    public LogMessage(LogLevel logLevel, string categoryName, string message)
+    public LogMessage(string message, Exception exception, LogLevel logLevel, string categoryName, EventId eventId)
     {
-        TimeStamp = DateTime.Now.ToString("yyyy-MM-dd--HH.mm.ss");
-        CategoryName = categoryName;
         Message = message;
+        Exception = exception;
         LogLevel = logLevel;
+        CategoryName = categoryName;
+        EventId = eventId;
+        TimeStamp = DateTime.Now.ToString("yyyy-MM-dd--HH.mm.ss");
         Header = $"{TimeStamp}|{LogLevelToString(logLevel)}|{categoryName}|";
+        
+        if (eventId.Id != 0) 
+        { 
+            Message += $" [{eventId.Id}]"; 
+        }
+
+        if (exception != null && message.Length > 0)
+        {
+            Message += $" [{exception.Message}]";
+        }
+        else if (exception != null && message.Length == 0)
+        {
+            Message = exception.Message;
+        }
+        
         PaddedMessage = PadMessage(Header, Message);
-        FullMessage = $"{Header}{PaddedMessage}";
     }
 
     /// <summary>
-    /// Converts a Microsoft.Extensions.Logging.LogLevel to a string representation.
+    /// Converts a Microsoft.Extensions.Logging.LogLevel to a short string representation.
     /// </summary>
     /// <param name="logLevel">A log level to convert.</param>
     /// <returns>String representation of the log level.</returns>
-    public static string LogLevelToString(LogLevel logLevel)
+    internal static string LogLevelToString(LogLevel logLevel)
     {
-        string header = "";
+        string result = "";
 
         switch (logLevel)
         {
             case LogLevel.Trace:
-                header += "TRCE";
+                result += "TRCE";
                 break;
             case LogLevel.Warning:
-                header += "WARN";
+                result += "WARN";
                 break;
             case LogLevel.Debug:
-                header += "DBUG";
+                result += "DBUG";
                 break;
             case LogLevel.Information:
-                header += "INFO";
+                result += "INFO";
                 break;
             case LogLevel.Error:
-                header += "ERRR";
+                result += "ERRR";
                 break;
             case LogLevel.Critical:
-                header += "CRIT";
+                result += "CRIT";
                 break;
             case LogLevel.None:
-                header += "    ";
+                result += "    ";
                 break;
         }
 
-        return header;
+        return result;
     }
 
     /// <summary>
@@ -77,7 +90,7 @@ internal class LogMessage
     /// <returns></returns>
     private static string PadMessage(string header, string message)
     {
-        string output;
+        string result;
 
         if (message.Contains("\r\n") || message.Contains('\n'))
         {
@@ -88,18 +101,18 @@ internal class LogMessage
                 splitMsg[i] = new String(' ', header.Length) + splitMsg[i];
             }
 
-            output = string.Join(Environment.NewLine, splitMsg);
+            result = string.Join(Environment.NewLine, splitMsg);
         }
         else
         {
-            output = message;
+            result = message;
         }
 
-        return output;
+        return result;
     }
 
     public override string ToString()
     {
-        return FullMessage;
+        return $"{Header}{Message}";
     }
 }

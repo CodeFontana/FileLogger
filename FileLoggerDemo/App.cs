@@ -54,7 +54,7 @@ public class App : IHostedService
         _logger.LogInformation("Hello, World!");
         _logger.LogWarning("Hello, Warning!");
         _logger.LogError("Hello, Error!");
-        _logger.LogCritical("Hello, Critical!");
+        _logger.LogCritical(new Exception("Meltdown imminent!!"), "Hello, Critical!");
 
         var weatherForecast = new
         {

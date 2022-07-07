@@ -47,87 +47,6 @@ internal class FileLogger : ILogger
     }
 
     /// <summary>
-    /// Formats the message and submits it to the LoggerProviders Log() method.
-    /// </summary>
-    /// <param name="message">The message.</param>
-    /// <param name="logLevel">The log level entry.</param>
-    public void Log(string message, LogLevel logLevel)
-    {
-        LogMessage msg = new(logLevel, _categoryName, message);
-        _fileLoggerProvider.Log(msg);
-    }
-
-    /// <summary>
-    /// Formats the exception message and submits it to the Log Provider's Log() method.
-    /// </summary>
-    /// <param name="e">An exception.</param>
-    public void Log(Exception e)
-    {
-        LogMessage msg = new(LogLevel.Error, _categoryName, e.Message);
-        _fileLoggerProvider.Log(msg);
-    }
-
-    /// <summary>
-    /// Formats and writes a critical log message.
-    /// </summary>
-    /// <param name="message">The message.</param>
-    public void LogCritical(string message)
-    {
-        LogMessage msg = new(LogLevel.Critical, _categoryName, message);
-        _fileLoggerProvider.Log(msg);
-    }
-
-    /// <summary>
-    /// Formats and writes a debug log message.
-    /// </summary>
-    /// <param name="message">The message.</param>
-    public void LogDebug(string message)
-    {
-        LogMessage msg = new(LogLevel.Debug, _categoryName, message);
-        _fileLoggerProvider.Log(msg);
-    }
-
-    /// <summary>
-    /// Formats and writes an error log message.
-    /// </summary>
-    /// <param name="message">The message.</param>
-    public void LogError(string message)
-    {
-        LogMessage msg = new(LogLevel.Error, _categoryName, message);
-        _fileLoggerProvider.Log(msg);
-    }
-
-    /// <summary>
-    /// Formats and writes an informational log message.
-    /// </summary>
-    /// <param name="message">The message.</param>
-    public void LogInformation(string message)
-    {
-        LogMessage msg = new(LogLevel.Information, _categoryName, message);
-        _fileLoggerProvider.Log(msg);
-    }
-
-    /// <summary>
-    /// Formats and writes a trace log message.
-    /// </summary>
-    /// <param name="message">The message.</param>
-    public void LogTrace(string message)
-    {
-        LogMessage msg = new(LogLevel.Trace, _categoryName, message);
-        _fileLoggerProvider.Log(msg);
-    }
-
-    /// <summary>
-    /// Formats and writes a warning log message.
-    /// </summary>
-    /// <param name="message">The message.</param>
-    public void LogWarning(string message)
-    {
-        LogMessage msg = new(LogLevel.Warning, _categoryName, message);
-        _fileLoggerProvider.Log(msg);
-    }
-
-    /// <summary>
     /// Write a log entry.
     /// </summary>
     /// <typeparam name="TState">Type parameter</typeparam>
@@ -145,31 +64,7 @@ internal class FileLogger : ILogger
         }
 
         ArgumentNullException.ThrowIfNull(nameof(formatter));
-
-        switch (logLevel)
-        {
-            case LogLevel.Trace:
-                LogTrace(formatter(state, exception));
-                break;
-            case LogLevel.Debug:
-                LogDebug(formatter(state, exception));
-                break;
-            case LogLevel.Warning:
-                LogWarning(formatter(state, exception));
-                break;
-            case LogLevel.Error:
-                LogError(formatter(state, exception));
-                break;
-            case LogLevel.Critical:
-                LogCritical(formatter(state, exception));
-                break;
-            case LogLevel.None:
-                Log(formatter(state, exception), LogLevel.None);
-                break;
-            case LogLevel.Information:
-            default:
-                LogInformation(formatter(state, exception));
-                break;
-        }
+        string message = formatter(state, exception);
+        _fileLoggerProvider.EnqueueMessage(new LogMessage(message, exception, logLevel, _categoryName, eventId));
     }
 }

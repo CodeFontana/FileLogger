@@ -85,4 +85,8 @@ public class FileLoggerOptions
         [LogLevel.None] = ConsoleColor.White
     };
 
+    /// <summary>
+    /// Custom formatter for logging entry. 
+    /// </summary>
+    public Func<LogMessage, string> LogEntryFormatter { get; set; }
 }

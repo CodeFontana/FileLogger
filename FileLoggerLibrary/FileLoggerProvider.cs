@@ -26,6 +26,7 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
     public bool IndentMultilineMessages { get; set; } = true;
     public bool ConsoleLogging { get; set; } = true;
     public bool EnableConsoleColors { get; set; } = true;
+    public Func<LogMessage, string> LogEntryFormatter { get; set; }
 
     public Dictionary<LogLevel, ConsoleColor> LogLevelColors { get; set; } = new()
     {
@@ -53,6 +54,7 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
     /// <param name="indentMultilineMessages">Indent multiline messages. If unspecified, the default value is true.</param>
     /// <param name="consoleLogging">Enable logging to console. If unspecified, the default value is true.</param>
     /// <param name="enableConsoleColors">Enable colorful console logging. If unspecified, the default value is true.</param>
+    /// <param name="logEntryFormatter">Custom formatter for logging entry. If unspecified, the default value is true.</param>
     /// <returns>An initialized FileLoggerProvider</returns>
     public FileLoggerProvider(string logName,
                               string logFolder = null,
@@ -61,7 +63,8 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
                               LogLevel logMinLevel = LogLevel.Trace,
                               bool indentMultilineMessages = true,
                               bool consoleLogging = true,
-                              bool enableConsoleColors = true) : this(new()
+                              bool enableConsoleColors = true,
+                              Func<LogMessage, string> logEntryFormatter = null) : this(new()
                               {
                                   LogName = logName,
                                   LogFolder = logFolder,
@@ -70,7 +73,8 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
                                   LogMinLevel = logMinLevel,
                                   IndentMultilineMessages = indentMultilineMessages,
                                   ConsoleLogging = consoleLogging,
-                                  EnableConsoleColors = enableConsoleColors
+                                  EnableConsoleColors = enableConsoleColors,
+                                  LogEntryFormatter = logEntryFormatter
                               })
     {
         // Builds FileLoggerOptions object and implements next constructor
@@ -105,6 +109,7 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
         ConsoleLogging = options.ConsoleLogging;
         EnableConsoleColors = options.EnableConsoleColors;
         LogLevelColors = options.LogLevelColors;
+        LogEntryFormatter = options.LogEntryFormatter;
         Open();
 
         // Start processing message queue
@@ -142,40 +147,68 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
             {
                 if (ConsoleLogging && EnableConsoleColors)
                 {
-                    ConsoleColor originalColor = Console.ForegroundColor;
-                    Console.Write($"{message.TimeStamp}|");
-                    Console.ForegroundColor = LogLevelColors[message.LogLevel];
-                    Console.Write(LogMessage.LogLevelToString(message.LogLevel));
-                    Console.ForegroundColor = originalColor;
-                    Console.Write($"|{message.CategoryName}|");
-                    Console.ForegroundColor = LogLevelColors[message.LogLevel];
-
-                    if (IndentMultilineMessages)
+                    if (LogEntryFormatter != null)
                     {
-                        Console.WriteLine(message.PaddedMessage);
+                        Console.WriteLine(LogEntryFormatter(message));
                     }
                     else
                     {
-                        Console.WriteLine(message.Message);
+                        ConsoleColor originalColor = Console.ForegroundColor;
+                        Console.Write($"{message.TimeStamp}|");
+                        Console.ForegroundColor = LogLevelColors[message.LogLevel];
+                        Console.Write(LogMessage.LogLevelToString(message.LogLevel));
+                        Console.ForegroundColor = originalColor;
+                        Console.Write($"|{message.CategoryName}|");
+                        Console.ForegroundColor = LogLevelColors[message.LogLevel];
+
+                        if (IndentMultilineMessages)
+                        {
+                            Console.WriteLine(message.PaddedMessage);
+                        }
+                        else
+                        {
+                            Console.WriteLine(message.Message);
+                        }
+
+                        Console.ForegroundColor = originalColor;
                     }
-                    
-                    Console.ForegroundColor = originalColor;
                 }
                 else if (ConsoleLogging)
                 {
-                    Console.WriteLine(message);
+                    if (LogEntryFormatter != null)
+                    {
+                        Console.WriteLine(LogEntryFormatter(message));
+                    }
+                    else
+                    {
+                        if (IndentMultilineMessages)
+                        {
+                            Console.WriteLine($"{message.Header}{message.PaddedMessage}");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"{message.Header}{message.Message}");
+                        }
+                    }
+
+                    
                 }
 
-                if (IndentMultilineMessages)
+                if (LogEntryFormatter != null)
                 {
-                    _logWriter.WriteLine(message.FullMessage);
+                    _logWriter.WriteLine(LogEntryFormatter(message));
                 }
                 else
                 {
-                    _logWriter.WriteLine(message.UnPaddedMessage);
+                    if (IndentMultilineMessages)
+                    {
+                        _logWriter.WriteLine($"{message.Header}{message.PaddedMessage}");
+                    }
+                    else
+                    {
+                        _logWriter.WriteLine($"{message.Header}{message.Message}");
+                    }
                 }
-
-                
             }
         }
     }
@@ -185,7 +218,7 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
     /// on with business.
     /// </summary>
     /// <param name="message"></param>
-    private void EnqueueMessage(LogMessage message)
+    internal void EnqueueMessage(LogMessage message)
     {
         if (_messageQueue.IsAddingCompleted == false)
         {
@@ -360,21 +393,6 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
         {
             return false;
         }
-    }
-
-    /// <summary>
-    /// Logs a message.
-    /// </summary>
-    /// <param name="message">Message to be written.</param>
-    /// <param name="logLevel">Log level specification. If unspecified, the default is 'INFO'.</param>
-    public void Log(LogMessage message)
-    {
-        if (string.IsNullOrWhiteSpace(message.Message))
-        {
-            return;
-        }
-
-        EnqueueMessage(message);
     }
 
     /// <summary>
