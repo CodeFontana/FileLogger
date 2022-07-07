@@ -198,7 +198,9 @@ IndentMultilineMessages=**false**
 
 ## Roadmap
 * Support for Daily, Weekly or Monthly rolling log, up to 1GB maximum single log file.
-* Support custom formatter for log message.
+* Support for Custom formatter for log message.
+* Support for UTC timestamps, instead of local time.
+* Option for turning off log appending, in favor of creating a new log with each execution.
 
 ## Reference
 https://docs.microsoft.com/en-us/dotnet/core/extensions/custom-logging-provider
