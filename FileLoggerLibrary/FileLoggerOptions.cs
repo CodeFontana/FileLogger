@@ -46,10 +46,26 @@ public class FileLoggerOptions
     public LogLevel LogMinLevel { get; set; } = LogLevel.Trace;
 
     /// <summary>
+    /// Outputs the log message in a multiline format, where the
+    /// header information (timestamp, log level, category etc.)
+    /// are on the first line, the message is on the second line,
+    /// and an empty line is added to buffer from the next logging
+    /// message.
+    /// <remarks>
+    /// By default, single line formatting is used. Usage of this
+    /// option invalidates 'IndentMultilineMessages', since multiline
+    /// messages have no cause for indentation.
+    /// </remarks>
+    /// </summary>
+    public bool MultiLineFormat { get; set; } = false;
+
+    /// <summary>
     /// Determines if multiline messages (messages that contain \n),
     /// should be indented to align with the log message header.
     /// <remarks>
-    /// By default, indentation is enabled.
+    /// By default, indentation is enabled. This option is for
+    /// Single line formattered logging, only. If MultiLineFormat
+    /// is configured, this option will be ignored.
     /// </remarks>
     /// </summary>
     public bool IndentMultilineMessages { get; set; } = true;

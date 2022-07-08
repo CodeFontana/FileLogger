@@ -23,6 +23,7 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
     public long LogMaxBytes { get; private set; } = 50 * 1048576;
     public uint LogMaxCount { get; private set; } = 10;
     public LogLevel LogMinLevel { get; private set; } = LogLevel.Trace;
+    public bool MultiLineFormat { get; set; } = false;
     public bool IndentMultilineMessages { get; set; } = true;
     public bool ConsoleLogging { get; set; } = true;
     public bool EnableConsoleColors { get; set; } = true;
@@ -51,6 +52,7 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
     /// <param name="logMaxBytes">Maximum size (in bytes) for the log file. If unspecified, the default is 50MB per log.</param>
     /// <param name="logMaxCount">Maximum count of log files for rotation. If unspecified, the default is 10 logs.</param>
     /// <param name="logMinLevel">Minimum log level for output. If unspecified, the default value is LogLevel.Trace.</param>
+    /// <param name="multilineFormat">Uses a multiline message format. If unspecified, the default value is false for a single line format.</param>
     /// <param name="indentMultilineMessages">Indent multiline messages. If unspecified, the default value is true.</param>
     /// <param name="consoleLogging">Enable logging to console. If unspecified, the default value is true.</param>
     /// <param name="enableConsoleColors">Enable colorful console logging. If unspecified, the default value is true.</param>
@@ -61,6 +63,7 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
                               long logMaxBytes = 50 * 1048576,
                               uint logMaxCount = 10,
                               LogLevel logMinLevel = LogLevel.Trace,
+                              bool multiLineFormat = false,
                               bool indentMultilineMessages = true,
                               bool consoleLogging = true,
                               bool enableConsoleColors = true,
@@ -71,6 +74,7 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
                                   LogMaxBytes = logMaxBytes,
                                   LogMaxCount = logMaxCount,
                                   LogMinLevel = logMinLevel,
+                                  MultiLineFormat = multiLineFormat,
                                   IndentMultilineMessages = indentMultilineMessages,
                                   ConsoleLogging = consoleLogging,
                                   EnableConsoleColors = enableConsoleColors,
@@ -105,6 +109,7 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
         LogMaxBytes = options.LogMaxBytes;
         LogMaxCount = options.LogMaxCount;
         LogMinLevel = options.LogMinLevel;
+        MultiLineFormat = options.MultiLineFormat;
         IndentMultilineMessages = options.IndentMultilineMessages;
         ConsoleLogging = options.ConsoleLogging;
         EnableConsoleColors = options.EnableConsoleColors;
@@ -145,72 +150,140 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
 
             lock (_lockObj)
             {
-                if (ConsoleLogging && EnableConsoleColors)
-                {
-                    if (LogEntryFormatter != null)
-                    {
-                        Console.WriteLine(LogEntryFormatter(message));
-                    }
-                    else
-                    {
-                        ConsoleColor originalColor = Console.ForegroundColor;
-                        Console.Write($"{message.TimeStamp}|");
-                        Console.ForegroundColor = LogLevelColors[message.LogLevel];
-                        Console.Write(LogMessage.LogLevelToString(message.LogLevel));
-                        Console.ForegroundColor = originalColor;
-                        Console.Write($"|{message.CategoryName}|");
-                        Console.ForegroundColor = LogLevelColors[message.LogLevel];
-
-                        if (IndentMultilineMessages)
-                        {
-                            Console.WriteLine(message.PaddedMessage);
-                        }
-                        else
-                        {
-                            Console.WriteLine(message.Message);
-                        }
-
-                        Console.ForegroundColor = originalColor;
-                    }
-                }
-                else if (ConsoleLogging)
-                {
-                    if (LogEntryFormatter != null)
-                    {
-                        Console.WriteLine(LogEntryFormatter(message));
-                    }
-                    else
-                    {
-                        if (IndentMultilineMessages)
-                        {
-                            Console.WriteLine($"{message.Header}{message.PaddedMessage}");
-                        }
-                        else
-                        {
-                            Console.WriteLine($"{message.Header}{message.Message}");
-                        }
-                    }
-
-                    
-                }
-
                 if (LogEntryFormatter != null)
                 {
+                    if (ConsoleLogging)
+                    {
+                        Console.WriteLine(LogEntryFormatter(message));
+                    }
+
                     _logWriter.WriteLine(LogEntryFormatter(message));
+                }
+                else if (MultiLineFormat)
+                {
+                    WriteMultiLineFormatMessage(message);
                 }
                 else
                 {
-                    if (IndentMultilineMessages)
-                    {
-                        _logWriter.WriteLine($"{message.Header}{message.PaddedMessage}");
-                    }
-                    else
-                    {
-                        _logWriter.WriteLine($"{message.Header}{message.Message}");
-                    }
+                    WriteSingleLineFormatMessage(message);
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Writes single-line formatted log message.
+    /// 
+    /// Example:
+    /// 2022-07-07--21.53.14|TRCE|FileLoggerDemo.App|Hello, Trace!
+    /// 2022-07-07--21.53.14|DBUG|FileLoggerDemo.App|Hello, Debug!
+    /// 2022-07-07--21.53.14|INFO|FileLoggerDemo.App|Hello, World!
+    /// 2022-07-07--21.53.14|WARN|FileLoggerDemo.App|Hello, Warning!
+    /// 2022-07-07--21.53.14|ERRR|FileLoggerDemo.App|Hello, Error!
+    /// 2022-07-07--21.53.14|CRIT|FileLoggerDemo.App|Hello, Critical! [Meltdown imminent!!]
+    /// </summary>
+    /// <param name="message">LogMessage object to be logged.</param>
+    private void WriteSingleLineFormatMessage(LogMessage message)
+    {
+        if (ConsoleLogging)
+        {
+            if (EnableConsoleColors)
+            {
+                ConsoleColor originalColor = Console.ForegroundColor;
+                Console.Write($"{message.TimeStamp}|");
+                Console.ForegroundColor = LogLevelColors[message.LogLevel];
+                Console.Write(LogMessage.LogLevelToString(message.LogLevel));
+                Console.ForegroundColor = originalColor;
+                Console.Write($"|{message.CategoryName}|");
+                Console.ForegroundColor = LogLevelColors[message.LogLevel];
+
+                if (IndentMultilineMessages)
+                {
+                    Console.WriteLine(message.PaddedMessage);
+                }
+                else
+                {
+                    Console.WriteLine(message.Message);
+                }
+
+                Console.ForegroundColor = originalColor;
+            }
+            else
+            {
+                if (IndentMultilineMessages)
+                {
+                    Console.WriteLine($"{message.Header}{message.PaddedMessage}");
+                }
+                else
+                {
+                    Console.WriteLine($"{message.Header}{message.Message}");
+                }
+            }
+        }
+
+        if (IndentMultilineMessages)
+        {
+            _logWriter.WriteLine($"{message.Header}{message.PaddedMessage}");
+        }
+        else
+        {
+            _logWriter.WriteLine($"{message.Header}{message.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Writes multi-line formatted log message.
+    /// 
+    /// Example:
+    /// [2022-07-07--21.53.14|TRCE|FileLoggerDemo.App]
+    /// Hello, Trace!
+    /// 
+    /// [2022-07-07--21.53.14|DBUG|FileLoggerDemo.App]
+    /// Hello, Debug!
+    /// 
+    /// [2022-07-07--21.53.14|INFO|FileLoggerDemo.App]
+    /// Hello, World!
+    /// 
+    /// [2022-07-07--21.53.14|WARN|FileLoggerDemo.App]
+    /// Hello, Warning!
+    /// 
+    /// [2022-07-07--21.53.14|ERRR|FileLoggerDemo.App]
+    /// Hello, Error!
+    /// 
+    /// [2022-07-07--21.53.14|CRIT|FileLoggerDemo.App]
+    /// Hello, Critical! [Meltdown imminent!!]
+    /// 
+    /// </summary>
+    /// <param name="message">LogMessage object to be logged.</param>
+    private void WriteMultiLineFormatMessage(LogMessage message)
+    {
+        if (ConsoleLogging)
+        {
+            if (EnableConsoleColors)
+            {
+                ConsoleColor originalColor = Console.ForegroundColor;
+                Console.Write($"[{message.TimeStamp}|");
+                Console.ForegroundColor = LogLevelColors[message.LogLevel];
+                Console.Write(LogMessage.LogLevelToString(message.LogLevel));
+                Console.ForegroundColor = originalColor;
+                Console.Write($"|{message.CategoryName}]{Environment.NewLine}");
+                Console.ForegroundColor = LogLevelColors[message.LogLevel];
+                Console.WriteLine($"{message.Message}{Environment.NewLine}");
+                Console.ForegroundColor = originalColor;
+            }
+            else
+            {
+                Console.Write($"[{message.TimeStamp}|");
+                Console.Write(LogMessage.LogLevelToString(message.LogLevel));
+                Console.Write($"|{message.CategoryName}]{Environment.NewLine}");
+                Console.WriteLine($"{message.Message}{Environment.NewLine}");
+            }
+        }
+
+        _logWriter.Write($"[{message.TimeStamp}|");
+        _logWriter.Write(LogMessage.LogLevelToString(message.LogLevel));
+        _logWriter.Write($"|{message.CategoryName}]{Environment.NewLine}");
+        _logWriter.WriteLine($"{message.Message}{Environment.NewLine}");
     }
 
     /// <summary>

@@ -127,6 +127,13 @@ public static class FileLoggerExtensions
             options.LogMinLevel = level;
         }
 
+        string multiLineFormat = fileLogger["MultilineFormat"];
+
+        if (string.IsNullOrWhiteSpace(multiLineFormat) == false && bool.TryParse(multiLineFormat, out bool multiLine))
+        {
+            options.MultiLineFormat = multiLine;
+        }
+
         string indentMultilineMessages = fileLogger["IndentMultilineMessages"];
 
         if (string.IsNullOrWhiteSpace(indentMultilineMessages) == false && bool.TryParse(indentMultilineMessages, out bool indent))
