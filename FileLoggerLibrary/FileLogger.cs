@@ -11,7 +11,7 @@ internal class FileLogger : ILogger
     /// Default constructor for a FileLogger object.
     /// </summary>
     /// <param name="fileLoggerProvider">The log provider this FileLogger instance is based.</param>
-    /// <param name="categoryName">Log or category name for this FileLogger instance</param>
+    /// <param name="categoryName">Log or category name for this FileLogger instance.</param>
     /// <exception cref="ArgumentException">Null or empty arguments are not accepted.</exception>
     public FileLogger(FileLoggerProvider fileLoggerProvider, string categoryName)
     {
@@ -28,7 +28,7 @@ internal class FileLogger : ILogger
     /// <summary>
     /// Checks if the given logLevel is enabled.
     /// </summary>
-    /// <param name="logLevel">The log level to check</param>
+    /// <param name="logLevel">The log level to check.</param>
     /// <returns></returns>
     public bool IsEnabled(LogLevel logLevel)
     {
@@ -38,7 +38,7 @@ internal class FileLogger : ILogger
     /// <summary>
     /// Begins a logical operation scope.
     /// </summary>
-    /// <typeparam name="TState">Type parameter</typeparam>
+    /// <typeparam name="TState">Type parameter.</typeparam>
     /// <param name="state">The entry to be written. Can be also an object.</param>
     /// <returns>A disposable object that ends the logical operation scope on dispose.</returns>
     public IDisposable BeginScope<TState>(TState state)
@@ -49,7 +49,7 @@ internal class FileLogger : ILogger
     /// <summary>
     /// Write a log entry.
     /// </summary>
-    /// <typeparam name="TState">Type parameter</typeparam>
+    /// <typeparam name="TState">Type parameter.</typeparam>
     /// <param name="logLevel">Entry will be written on this level.</param>
     /// <param name="eventId">Id of the event.</param>
     /// <param name="state">The entry to be written. Can be also an object.</param>
