@@ -4,11 +4,17 @@
 * Cross-platform implementation supporting asynchronous Console and File logging.
 * Rolling logs with configurable maximum size, maximum count and append of existing log.
 * Configurable default minimum log level.
+* Single, Multi or Custom log entry formats.
 * Indent multiline messages for easier reading and analysis.
 * Configurable color scheme for Console log messages, for easier reading.
 
-![Code sample](https://user-images.githubusercontent.com/41308769/162116432-e100c81b-9c30-41a9-8335-b176355ad4d1.png)
-![Console colors](https://user-images.githubusercontent.com/41308769/162116455-cbd5a37c-bce3-4717-9c50-8c6e74a4777b.png)
+![Snag_1609de2d](https://user-images.githubusercontent.com/41308769/177913392-a33cbc7e-5c7b-43b2-922f-ba9e41c34948.png)
+
+### Single-line Format
+![Snag_160b55f8](https://user-images.githubusercontent.com/41308769/177913556-a6b144a5-bbea-42cc-ae07-078923368d5a.png)
+
+### Multi-line Format
+![Snag_160d922c](https://user-images.githubusercontent.com/41308769/177913819-5c1134bb-0ffd-4cb3-a134-3bf643d9910c.png)
 
 ## How to use
 
@@ -42,6 +48,7 @@ using FileLoggerLibrary;
       "LogFolder": "",
       "LogMaxBytes": 52428800,
       "LogMaxCount": 10,
+      "MultilineFormat": false,
       "IndentMultilineMessages": true,
       "ConsoleLogging": true,
       "EnableConsoleColors": true,
@@ -146,6 +153,7 @@ internal class Program
                         configure.LogMaxBytes = 50 * 1048576;
                         configure.LogMaxCount = 10;
                         configure.LogMinLevel = LogLevel.Trace;
+                        configure.MultiLineFormat = false;
                         configure.IndentMultilineMessages = true;
                         configure.ConsoleLogging = true;
                         configure.EnableConsoleColors = true;
@@ -196,11 +204,14 @@ IndentMultilineMessages=**false**
 }
 ```
 
+Note: The IndentMultilineMessages option is only for the Single-Line message format.
+
 ## Roadmap
 * Support for Daily, Weekly or Monthly rolling log, up to 1GB maximum single log file.
-* Support for Custom formatter for log message.
 * Support for UTC timestamps, instead of local time.
-* Option for turning off log appending, in favor of creating a new log with each execution.
+* Introduce option for configuring log appending:  
+  --> ON by default, but allow it to be turned OFF  
+  --> This would allow a new log file to be created with each program execution.
 
 ## Reference
 https://docs.microsoft.com/en-us/dotnet/core/extensions/custom-logging-provider
