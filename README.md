@@ -4,7 +4,7 @@
 * Cross-platform implementation supporting asynchronous Console and File logging.
 * Rolling logs with configurable maximum size, maximum count and append of existing log.
 * Configurable default minimum log level.
-* Single, Multi or Custom log entry formats.
+* Single-line, Multi-line or Custom log entry formats.
 * Indent multiline messages for easier reading and analysis.
 * Configurable color scheme for Console log messages, for easier reading.
 
