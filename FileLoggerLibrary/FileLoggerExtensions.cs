@@ -26,7 +26,7 @@ public static class FileLoggerExtensions
         builder.SetMinimumLevel(LogLevel.Trace);
         return builder;
     }
-    
+
     public static ILoggingBuilder AddFileLogger(this ILoggingBuilder builder, string name, string folder, LogLevel minLevel)
     {
         builder.Services.AddSingleton<ILoggerProvider, FileLoggerProvider>(sp => new FileLoggerProvider(name, folder));
@@ -51,6 +51,13 @@ public static class FileLoggerExtensions
     public static ILoggingBuilder AddFileLogger(this ILoggingBuilder builder, string name, string folder, long maxBytes, uint maxCount, LogLevel minLevel)
     {
         builder.Services.AddSingleton<ILoggerProvider, FileLoggerProvider>(sp => new FileLoggerProvider(name, folder, maxBytes, maxCount, minLevel));
+        builder.SetMinimumLevel(minLevel);
+        return builder;
+    }
+
+    public static ILoggingBuilder AddFileLogger(this ILoggingBuilder builder, string name, string folder, long maxBytes, uint maxCount, LogLevel minLevel, bool useUtcTimestamp)
+    {
+        builder.Services.AddSingleton<ILoggerProvider, FileLoggerProvider>(sp => new FileLoggerProvider(name, folder, maxBytes, maxCount, minLevel, useUtcTimestamp));
         builder.SetMinimumLevel(minLevel);
         return builder;
     }
@@ -121,10 +128,18 @@ public static class FileLoggerExtensions
         }
 
         string minLevel = fileLogger["LogMinLevel"];
-        
+
         if (string.IsNullOrWhiteSpace(minLevel) == false && Enum.TryParse(minLevel, out LogLevel level))
         {
             options.LogMinLevel = level;
+        }
+
+        string useUtcTimestamp = fileLogger["UseUtcTimestamp"];
+
+        if (string.IsNullOrWhiteSpace(useUtcTimestamp) == false
+            && bool.TryParse(useUtcTimestamp, out bool useUtcTime))
+        {
+            options.UseUtcTimestamp = useUtcTime;
         }
 
         string multiLineFormat = fileLogger["MultilineFormat"];
@@ -155,12 +170,12 @@ public static class FileLoggerExtensions
             options.EnableConsoleColors = colors;
         }
 
-        Dictionary<LogLevel, ConsoleColor> logLevelColors = 
+        Dictionary<LogLevel, ConsoleColor> logLevelColors =
             fileLogger.GetSection("LogLevelColors").GetChildren().ToDictionary(x =>
             {
                 Enum.TryParse(x.Key, out LogLevel level);
                 return level;
-            }, 
+            },
             x =>
             {
                 Enum.TryParse(x.Value, out ConsoleColor color);

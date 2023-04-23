@@ -17,19 +17,19 @@ public class LogMessage
     /// Default constructor, builds a log message and publishes properties
     /// for each distinct part of the message structure.
     /// </summary>
-    public LogMessage(string message, Exception exception, LogLevel logLevel, string categoryName, EventId eventId)
+    public LogMessage(string message, Exception exception, LogLevel logLevel, string categoryName, EventId eventId, bool useUtcTimestamp)
     {
         Message = message;
         Exception = exception;
         LogLevel = logLevel;
         CategoryName = categoryName;
         EventId = eventId;
-        TimeStamp = DateTime.Now.ToString("yyyy-MM-dd--HH.mm.ss");
+        TimeStamp = useUtcTimestamp ? DateTime.UtcNow.ToString("yyyy-MM-dd--HH.mm.ss") : DateTime.Now.ToString("yyyy-MM-dd--HH.mm.ss");
         Header = $"{TimeStamp}|{LogLevelToString(logLevel)}|{categoryName}|";
-        
-        if (eventId.Id != 0) 
-        { 
-            Message += $" [{eventId.Id}]"; 
+
+        if (eventId.Id != 0)
+        {
+            Message += $" [{eventId.Id}]";
         }
 
         if (exception != null && message.Length > 0)
@@ -40,7 +40,7 @@ public class LogMessage
         {
             Message = exception.Message;
         }
-        
+
         PaddedMessage = PadMessage(Header, Message);
     }
 

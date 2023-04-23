@@ -46,6 +46,11 @@ public class FileLoggerOptions
     public LogLevel LogMinLevel { get; set; } = LogLevel.Trace;
 
     /// <summary>
+    /// Determines if UTC timestamps should be used, instead of local time.
+    /// </summary>
+    public bool UseUtcTimestamp { get; set; } = false;
+
+    /// <summary>
     /// Outputs the log message in a multiline format, where the
     /// header information (timestamp, log level, category etc.)
     /// are on the first line, the message is on the second line,

@@ -63,8 +63,9 @@ internal class FileLogger : ILogger
             return;
         }
 
-        ArgumentNullException.ThrowIfNull(nameof(formatter));
+        ArgumentException.ThrowIfNullOrEmpty(nameof(formatter));
         string message = formatter(state, exception);
-        _fileLoggerProvider.EnqueueMessage(new LogMessage(message, exception, logLevel, _categoryName, eventId));
+        LogMessage logMessage = new(message, exception, logLevel, _categoryName, eventId, _fileLoggerProvider.UseUtcTimestamp);
+        _fileLoggerProvider.EnqueueMessage(logMessage);
     }
 }

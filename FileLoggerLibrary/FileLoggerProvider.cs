@@ -8,14 +8,13 @@ namespace FileLoggerLibrary;
 [ProviderAlias("FileLogger")]
 internal class FileLoggerProvider : ILoggerProvider, IDisposable
 {
-    private readonly ConcurrentDictionary<string, FileLogger> _loggers =  new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, FileLogger> _loggers = new(StringComparer.OrdinalIgnoreCase);
     private readonly BlockingCollection<LogMessage> _messageQueue = new(1024);
     private readonly Task _processMessages;
     private FileStream _logStream = null;
     private StreamWriter _logWriter = null;
     private readonly object _lockObj = new();
     private bool _rollMode = false;
-
     public string LogName { get; private set; }
     public string LogFilename { get; private set; }
     public string LogFolder { get; private set; } = "";
@@ -23,6 +22,7 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
     public long LogMaxBytes { get; private set; } = 50 * 1048576;
     public uint LogMaxCount { get; private set; } = 10;
     public LogLevel LogMinLevel { get; private set; } = LogLevel.Trace;
+    public bool UseUtcTimestamp { get; set; } = false;
     public bool MultiLineFormat { get; set; } = false;
     public bool IndentMultilineMessages { get; set; } = true;
     public bool ConsoleLogging { get; set; } = true;
@@ -63,6 +63,7 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
                               long logMaxBytes = 50 * 1048576,
                               uint logMaxCount = 10,
                               LogLevel logMinLevel = LogLevel.Trace,
+                              bool useUtcTimestamp = false,
                               bool multiLineFormat = false,
                               bool indentMultilineMessages = true,
                               bool consoleLogging = true,
@@ -74,6 +75,7 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
                                   LogMaxBytes = logMaxBytes,
                                   LogMaxCount = logMaxCount,
                                   LogMinLevel = logMinLevel,
+                                  UseUtcTimestamp = useUtcTimestamp,
                                   MultiLineFormat = multiLineFormat,
                                   IndentMultilineMessages = indentMultilineMessages,
                                   ConsoleLogging = consoleLogging,
@@ -109,6 +111,7 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
         LogMaxBytes = options.LogMaxBytes;
         LogMaxCount = options.LogMaxCount;
         LogMinLevel = options.LogMinLevel;
+        UseUtcTimestamp = options.UseUtcTimestamp;
         MultiLineFormat = options.MultiLineFormat;
         IndentMultilineMessages = options.IndentMultilineMessages;
         ConsoleLogging = options.ConsoleLogging;
@@ -320,10 +323,10 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
     /// </summary>
     /// <param name="categoryName"></param>
     /// <returns></returns>
-    private FileLogger CreateLoggerImplementation(string categoryName) 
+    private FileLogger CreateLoggerImplementation(string categoryName)
     {
-			return new FileLogger(this, categoryName);
-	}
+        return new FileLogger(this, categoryName);
+    }
 
     /// <summary>
     /// Checks if the specified file is in-use.
