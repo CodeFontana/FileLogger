@@ -48,6 +48,7 @@ using FileLoggerLibrary;
       "LogFolder": "",
       "LogMaxBytes": 52428800,
       "LogMaxCount": 10,
+      "UseUtcTimestamp": false,
       "MultilineFormat": false,
       "IndentMultilineMessages": true,
       "ConsoleLogging": true,
@@ -131,6 +132,7 @@ internal class Program
                         configure.LogMaxBytes = 50 * 1048576;
                         configure.LogMaxCount = 10;
                         configure.LogMinLevel = LogLevel.Trace;
+                        configure.UseUtcTimestamp = false;
                         configure.MultiLineFormat = false;
                         configure.IndentMultilineMessages = true;
                         configure.ConsoleLogging = true;
@@ -186,7 +188,6 @@ Note: The IndentMultilineMessages option is only for the Single-Line message for
 
 ## Roadmap
 * Support for Daily, Weekly or Monthly rolling log, up to 1GB maximum single log file.
-* Support for UTC timestamps, instead of local time.
 * Introduce option for configuring log appending:  
   --> ON by default, but allow it to be turned OFF  
   --> This would allow a new log file to be created with each program execution.
