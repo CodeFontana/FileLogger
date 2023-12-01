@@ -387,7 +387,7 @@ internal class FileLoggerProvider : ILoggerProvider, IDisposable
     {
         if (_rollMode == false)
         {
-            // After we find our starting point, we will permanetly be in 
+            // After we find our starting point, we will permanently be in 
             // rollMode, meaning we will always increment/wrap to the next
             // available log file increment.
             _rollMode = true;

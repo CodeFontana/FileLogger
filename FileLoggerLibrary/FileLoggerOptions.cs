@@ -69,7 +69,7 @@ public class FileLoggerOptions
     /// should be indented to align with the log message header.
     /// <remarks>
     /// By default, indentation is enabled. This option is for
-    /// Single line formattered logging, only. If MultiLineFormat
+    /// Single line formatted logging, only. If MultiLineFormat
     /// is configured, this option will be ignored.
     /// </remarks>
     /// </summary>
