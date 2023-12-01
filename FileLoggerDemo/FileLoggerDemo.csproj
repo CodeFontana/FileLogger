@@ -10,7 +10,7 @@
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<Company>CodeFoxtrot</Company>
 		<Authors>CodeFoxtrot</Authors>
-		<Copyright>2022</Copyright>
+		<Copyright>2023</Copyright>
 	</PropertyGroup>
 
 	<ItemGroup>
