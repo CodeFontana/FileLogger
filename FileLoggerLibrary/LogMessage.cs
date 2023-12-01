@@ -94,7 +94,7 @@ public class LogMessage
 
         if (message.Contains("\r\n") || message.Contains('\n'))
         {
-            string[] splitMsg = message.Replace("\r\n", "\n").Split(new char[] { '\n' });
+            string[] splitMsg = message.Replace("\r\n", "\n").Split(['\n']);
 
             for (int i = 1; i < splitMsg.Length; i++)
             {

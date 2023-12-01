@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
+﻿using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 
@@ -7,16 +6,15 @@ namespace FileLoggerDemo;
 public class App : IHostedService
 {
     private readonly IHostApplicationLifetime _hostApplicationLifetime;
-    private readonly IConfiguration _config;
     private readonly ILogger<App> _logger;
+    private readonly JsonSerializerOptions _jsonOptions;
 
     public App(IHostApplicationLifetime hostApplicationLifetime,
-               IConfiguration configuration,
                ILogger<App> logger)
     {
         _hostApplicationLifetime = hostApplicationLifetime;
-        _config = configuration;
         _logger = logger;
+        _jsonOptions = new JsonSerializerOptions { WriteIndented = true };
     }
 
     public Task StartAsync(CancellationToken cancellationToken)
@@ -27,7 +25,7 @@ public class App : IHostedService
             {
                 await Task.Yield(); // https://github.com/dotnet/runtime/issues/36063
                 await Task.Delay(1000); // Additional delay for Microsoft.Hosting.Lifetime messages
-                await Run();
+                Execute();
             }
             catch (Exception ex)
             {
@@ -47,7 +45,7 @@ public class App : IHostedService
         return Task.CompletedTask;
     }
 
-    public async Task Run()
+    public void Execute()
     {
         _logger.LogTrace("Hello, Trace!");
         _logger.LogDebug("Hello, Debug!");
@@ -64,8 +62,7 @@ public class App : IHostedService
             Summary = "Nice"
         };
 
-        _logger.LogInformation(JsonSerializer.Serialize(weatherForecast, new JsonSerializerOptions { WriteIndented = true}));
-
-        await Task.Delay(1);
+        string message = JsonSerializer.Serialize(weatherForecast, _jsonOptions);
+        _logger.LogInformation("{message}", message);
     }
 }
