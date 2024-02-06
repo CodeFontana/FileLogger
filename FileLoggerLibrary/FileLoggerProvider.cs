@@ -6,7 +6,7 @@ namespace FileLoggerLibrary;
 
 [UnsupportedOSPlatform("browser")]
 [ProviderAlias("FileLogger")]
-internal class FileLoggerProvider : ILoggerProvider, IDisposable
+internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
 {
     private readonly ConcurrentDictionary<string, FileLogger> _loggers = new(StringComparer.OrdinalIgnoreCase);
     private readonly BlockingCollection<LogMessage> _messageQueue = new(1024);

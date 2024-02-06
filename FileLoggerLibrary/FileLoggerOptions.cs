@@ -2,7 +2,7 @@
 
 namespace FileLoggerLibrary;
 
-public class FileLoggerOptions
+public sealed class FileLoggerOptions
 {
     /// <summary>
     /// Determines the log file name.
