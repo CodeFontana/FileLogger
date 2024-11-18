@@ -41,7 +41,7 @@ internal sealed class FileLogger : ILogger
     /// <typeparam name="TState">Type parameter.</typeparam>
     /// <param name="state">The entry to be written. Can be also an object.</param>
     /// <returns>A disposable object that ends the logical operation scope on dispose.</returns>
-    public IDisposable BeginScope<TState>(TState state)
+    IDisposable? ILogger.BeginScope<TState>(TState state)
     {
         return null;
     }
@@ -56,7 +56,7 @@ internal sealed class FileLogger : ILogger
     /// <param name="exception">The exception related to this entry.</param>
     /// <param name="formatter">Function to create a String message of the state and exception.</param>
     /// <exception cref="ArgumentNullException"></exception>
-    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
     {
         if (IsEnabled(logLevel) == false)
         {

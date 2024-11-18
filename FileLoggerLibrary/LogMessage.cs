@@ -5,7 +5,7 @@ namespace FileLoggerLibrary;
 public sealed class LogMessage
 {
     public string Message { get; init; }
-    public Exception Exception { get; init; }
+    public Exception? Exception { get; init; }
     public LogLevel LogLevel { get; init; }
     public string CategoryName { get; init; }
     public EventId EventId { get; init; }
@@ -17,7 +17,7 @@ public sealed class LogMessage
     /// Default constructor, builds a log message and publishes properties
     /// for each distinct part of the message structure.
     /// </summary>
-    public LogMessage(string message, Exception exception, LogLevel logLevel, string categoryName, EventId eventId, bool useUtcTimestamp)
+    public LogMessage(string message, Exception? exception, LogLevel logLevel, string categoryName, EventId eventId, bool useUtcTimestamp)
     {
         Message = message;
         Exception = exception;

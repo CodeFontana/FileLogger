@@ -10,7 +10,7 @@ public sealed class FileLoggerOptions
     /// A log name is required, no default will be provided.
     /// </remarks>
     /// </summary>
-    public string LogName { get; set; }
+    public string? LogName { get; set; }
 
     /// <summary>
     /// Determines the log file location.
@@ -19,7 +19,7 @@ public sealed class FileLoggerOptions
     /// at the path of the currently executing process.
     /// </remarks>
     /// </summary>
-    public string LogFolder { get; set; } = "";
+    public string? LogFolder { get; set; }
 
     /// <summary>
     /// Determines the maximum size, in bytes, of an individual log file.
@@ -109,5 +109,5 @@ public sealed class FileLoggerOptions
     /// <summary>
     /// Custom formatter for logging entry. 
     /// </summary>
-    public Func<LogMessage, string> LogEntryFormatter { get; set; }
+    public Func<LogMessage, string>? LogEntryFormatter { get; set; }
 }

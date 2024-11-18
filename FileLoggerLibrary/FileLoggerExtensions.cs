@@ -71,31 +71,31 @@ public static class FileLoggerExtensions
         return builder;
     }
 
-    public static ILoggingBuilder AddFileLogger(this ILoggingBuilder builder, IConfiguration configuration, Action<FileLoggerOptions> configure = null)
+    public static ILoggingBuilder AddFileLogger(this ILoggingBuilder builder, IConfiguration configuration, Action<FileLoggerOptions>? configure = null)
     {
-        FileLoggerProvider fileLoggerProvider = CreateFromConfiguration(configuration, configure = null);
+        FileLoggerProvider? fileLoggerProvider = CreateFromConfiguration(configuration, configure = null);
 
         if (fileLoggerProvider != null)
         {
             builder.Services.AddSingleton<ILoggerProvider, FileLoggerProvider>(sp => fileLoggerProvider);
+            builder.SetMinimumLevel(fileLoggerProvider.LogMinLevel);
         }
 
-        builder.SetMinimumLevel(fileLoggerProvider.LogMinLevel);
         return builder;
     }
 
-    private static FileLoggerProvider CreateFromConfiguration(IConfiguration configuration, Action<FileLoggerOptions> configure)
+    private static FileLoggerProvider? CreateFromConfiguration(IConfiguration configuration, Action<FileLoggerOptions>? configure)
     {
         IConfigurationSection fileLogger = configuration.GetSection("Logging:FileLogger");
 
-        if (fileLogger == null)
+        if (fileLogger is null)
         {
             return null;
         }
 
         FileLoggerOptions options = new();
 
-        string logName = fileLogger["LogName"];
+        string? logName = fileLogger["LogName"];
 
         if (string.IsNullOrWhiteSpace(logName) == false)
         {
@@ -106,35 +106,35 @@ public static class FileLoggerExtensions
             return null;
         }
 
-        string logFolder = fileLogger["LogFolder"];
+        string? logFolder = fileLogger["LogFolder"];
 
         if (string.IsNullOrWhiteSpace(logFolder) == false)
         {
             options.LogFolder = logFolder;
         }
 
-        string logMaxBytes = fileLogger["LogMaxBytes"];
+        string? logMaxBytes = fileLogger["LogMaxBytes"];
 
         if (string.IsNullOrWhiteSpace(logMaxBytes) == false && long.TryParse(logMaxBytes, out long maxBytes))
         {
             options.LogMaxBytes = maxBytes;
         }
 
-        string logMaxCount = fileLogger["LogMaxCount"];
+        string? logMaxCount = fileLogger["LogMaxCount"];
 
         if (string.IsNullOrWhiteSpace(logMaxCount) == false && uint.TryParse(logMaxCount, out uint maxFiles))
         {
             options.LogMaxCount = maxFiles;
         }
 
-        string minLevel = fileLogger["LogMinLevel"];
+        string? minLevel = fileLogger["LogMinLevel"];
 
         if (string.IsNullOrWhiteSpace(minLevel) == false && Enum.TryParse(minLevel, out LogLevel level))
         {
             options.LogMinLevel = level;
         }
 
-        string useUtcTimestamp = fileLogger["UseUtcTimestamp"];
+        string? useUtcTimestamp = fileLogger["UseUtcTimestamp"];
 
         if (string.IsNullOrWhiteSpace(useUtcTimestamp) == false
             && bool.TryParse(useUtcTimestamp, out bool useUtcTime))
@@ -142,28 +142,28 @@ public static class FileLoggerExtensions
             options.UseUtcTimestamp = useUtcTime;
         }
 
-        string multiLineFormat = fileLogger["MultilineFormat"];
+        string? multiLineFormat = fileLogger["MultilineFormat"];
 
         if (string.IsNullOrWhiteSpace(multiLineFormat) == false && bool.TryParse(multiLineFormat, out bool multiLine))
         {
             options.MultiLineFormat = multiLine;
         }
 
-        string indentMultilineMessages = fileLogger["IndentMultilineMessages"];
+        string? indentMultilineMessages = fileLogger["IndentMultilineMessages"];
 
         if (string.IsNullOrWhiteSpace(indentMultilineMessages) == false && bool.TryParse(indentMultilineMessages, out bool indent))
         {
             options.IndentMultilineMessages = indent;
         }
 
-        string consoleLogging = fileLogger["ConsoleLogging"];
+        string? consoleLogging = fileLogger["ConsoleLogging"];
 
         if (string.IsNullOrWhiteSpace(consoleLogging) == false && bool.TryParse(consoleLogging, out bool console))
         {
             options.ConsoleLogging = console;
         }
 
-        string enableConsoleColors = fileLogger["EnableConsoleColors"];
+        string? enableConsoleColors = fileLogger["EnableConsoleColors"];
 
         if (string.IsNullOrWhiteSpace(enableConsoleColors) == false && bool.TryParse(enableConsoleColors, out bool colors))
         {

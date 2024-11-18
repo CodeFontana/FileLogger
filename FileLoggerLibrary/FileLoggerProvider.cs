@@ -1,6 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Runtime.Versioning;
+using Microsoft.Extensions.Logging;
 
 namespace FileLoggerLibrary;
 
@@ -11,12 +11,12 @@ internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
     private readonly ConcurrentDictionary<string, FileLogger> _loggers = new(StringComparer.OrdinalIgnoreCase);
     private readonly BlockingCollection<LogMessage> _messageQueue = new(1024);
     private readonly Task _processMessages;
-    private FileStream _logStream = null;
-    private StreamWriter _logWriter = null;
+    private FileStream? _logStream = null;
+    private StreamWriter? _logWriter = null;
     private readonly object _lockObj = new();
     private bool _rollMode = false;
-    public string LogName { get; private set; }
-    public string LogFilename { get; private set; }
+    public string? LogName { get; private set; }
+    public string? LogFilename { get; private set; }
     public string LogFolder { get; private set; } = "";
     public int LogIncrement { get; private set; } = 0;
     public long LogMaxBytes { get; private set; } = 50 * 1048576;
@@ -27,7 +27,7 @@ internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
     public bool IndentMultilineMessages { get; set; } = true;
     public bool ConsoleLogging { get; set; } = true;
     public bool EnableConsoleColors { get; set; } = true;
-    public Func<LogMessage, string> LogEntryFormatter { get; set; }
+    public Func<LogMessage, string>? LogEntryFormatter { get; set; }
 
     public Dictionary<LogLevel, ConsoleColor> LogLevelColors { get; set; } = new()
     {
@@ -59,7 +59,7 @@ internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
     /// <param name="logEntryFormatter">Custom formatter for logging entry. If unspecified, the default value is true.</param>
     /// <returns>An initialized FileLoggerProvider</returns>
     public FileLoggerProvider(string logName,
-                              string logFolder = null,
+                              string? logFolder = null,
                               long logMaxBytes = 50 * 1048576,
                               uint logMaxCount = 10,
                               LogLevel logMinLevel = LogLevel.Trace,
@@ -68,7 +68,7 @@ internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
                               bool indentMultilineMessages = true,
                               bool consoleLogging = true,
                               bool enableConsoleColors = true,
-                              Func<LogMessage, string> logEntryFormatter = null) : this(new()
+                              Func<LogMessage, string>? logEntryFormatter = null) : this(new()
                               {
                                   LogName = logName,
                                   LogFolder = logFolder,
@@ -130,9 +130,9 @@ internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
     /// will be processed.
     /// </summary>
     /// <param name="state"></param>
-    private static void DequeueMessages(object state)
+    private static void DequeueMessages(object? state)
     {
-        FileLoggerProvider fileLogger = (FileLoggerProvider)state;
+        FileLoggerProvider fileLogger = (FileLoggerProvider)state!;
         fileLogger.DequeueMessages();
     }
 
@@ -144,6 +144,11 @@ internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
     {
         foreach (LogMessage message in _messageQueue.GetConsumingEnumerable())
         {
+            if (string.IsNullOrWhiteSpace(LogFilename))
+            {
+                throw new InvalidOperationException("Log filename is null or empty");
+            }
+
             long logSizeBytes = new FileInfo(LogFilename).Length;
 
             if (logSizeBytes >= LogMaxBytes)
@@ -160,7 +165,7 @@ internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
                         Console.WriteLine(LogEntryFormatter(message));
                     }
 
-                    _logWriter.WriteLine(LogEntryFormatter(message));
+                    _logWriter?.WriteLine(LogEntryFormatter(message));
                 }
                 else if (MultiLineFormat)
                 {
@@ -226,11 +231,11 @@ internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
 
         if (IndentMultilineMessages)
         {
-            _logWriter.WriteLine($"{message.Header}{message.PaddedMessage}");
+            _logWriter?.WriteLine($"{message.Header}{message.PaddedMessage}");
         }
         else
         {
-            _logWriter.WriteLine($"{message.Header}{message.Message}");
+            _logWriter?.WriteLine($"{message.Header}{message.Message}");
         }
     }
 
@@ -283,10 +288,10 @@ internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
             }
         }
 
-        _logWriter.Write($"[{message.TimeStamp}|");
-        _logWriter.Write(LogMessage.LogLevelToString(message.LogLevel));
-        _logWriter.Write($"|{message.CategoryName}]{Environment.NewLine}");
-        _logWriter.WriteLine($"{message.Message}{Environment.NewLine}");
+        _logWriter?.Write($"[{message.TimeStamp}|");
+        _logWriter?.Write(LogMessage.LogLevelToString(message.LogLevel));
+        _logWriter?.Write($"|{message.CategoryName}]{Environment.NewLine}");
+        _logWriter?.WriteLine($"{message.Message}{Environment.NewLine}");
     }
 
     /// <summary>
@@ -370,6 +375,11 @@ internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
 
         // Select next available log increment (sets LogFilename).
         IncrementLog();
+
+        if (string.IsNullOrWhiteSpace(LogFilename))
+        {
+            throw new InvalidOperationException("Log filename is null or empty");
+        }
 
         // Append the log file.
         _logStream = new FileStream(LogFilename, FileMode.Append, FileAccess.Write, FileShare.Read);
