@@ -1,8 +1,9 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿using System.Text.Json;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using System.Text.Json;
 
 namespace FileLoggerDemo;
+
 public class App : IHostedService
 {
     private readonly IHostApplicationLifetime _hostApplicationLifetime;
@@ -23,8 +24,7 @@ public class App : IHostedService
         {
             try
             {
-                await Task.Yield(); // https://github.com/dotnet/runtime/issues/36063
-                await Task.Delay(1000); // Additional delay for Microsoft.Hosting.Lifetime messages
+                await Task.Delay(250); // Additional delay for Microsoft.Hosting.Lifetime messages
                 Execute();
             }
             catch (Exception ex)

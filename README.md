@@ -8,6 +8,9 @@
 * Indent multiline messages for easier reading and analysis.
 * Configurable color scheme for Console log messages, for easier reading.
 
+## Target frameworks
+.NET 8, .NET 9, .NET 10.
+
 ![Snag_1609de2d](https://user-images.githubusercontent.com/41308769/177913392-a33cbc7e-5c7b-43b2-922f-ba9e41c34948.png)
 
 ### Single-line Format
@@ -20,7 +23,7 @@
 
 ### Scenario #1: Quickstart
 The following will create 10x50MB rolling logs for 'FileLoggerDemo_x.log" with default settings:
-```
+```csharp
 using FileLoggerLibrary;
 
 ...<omitted>...
@@ -35,7 +38,7 @@ using FileLoggerLibrary;
 ### Scenario #2: Using appsettings.json
   
 **appsettings.json** -- all options shown
-```
+```json
 {
   "Logging": {
     "LogLevel": {
@@ -68,7 +71,7 @@ using FileLoggerLibrary;
 ```
   
 **Program.cs** -- full file for complete context
-```
+```csharp
 using FileLoggerLibrary;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -106,7 +109,7 @@ internal class Program
 ### Scenario #3: Using ConfigureLogging
   
 **Program.cs**  -- full file for complete context, all FileLoggerOptions shown
-```
+```csharp
 using FileLoggerLibrary;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

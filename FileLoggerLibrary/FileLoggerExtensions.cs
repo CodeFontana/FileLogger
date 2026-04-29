@@ -73,7 +73,7 @@ public static class FileLoggerExtensions
 
     public static ILoggingBuilder AddFileLogger(this ILoggingBuilder builder, IConfiguration configuration, Action<FileLoggerOptions>? configure = null)
     {
-        FileLoggerProvider? fileLoggerProvider = CreateFromConfiguration(configuration, configure = null);
+        FileLoggerProvider? fileLoggerProvider = CreateFromConfiguration(configuration, configure);
 
         if (fileLoggerProvider != null)
         {
