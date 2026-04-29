@@ -10,6 +10,14 @@ public sealed record LogMessage
     public LogLevel LogLevel { get; init; }
     public string CategoryName { get; init; }
     public EventId EventId { get; init; }
+
+    /// <summary>
+    /// Pre-formatted EventId segment ("Id", "Name", or "Id:Name"), or empty
+    /// when no event id was supplied. Lives in the header, not the message
+    /// body, so multi-line indentation aligns correctly.
+    /// </summary>
+    public string EventIdText { get; init; }
+
     public string TimeStamp { get; init; }
     public string Header { get; init; }
     public string PaddedMessage { get; init; }
@@ -27,17 +35,16 @@ public sealed record LogMessage
         LogLevel = logLevel;
         CategoryName = categoryName;
         EventId = eventId;
+        EventIdText = FormatEventId(eventId);
         TimeStamp = (useUtcTimestamp ? DateTime.UtcNow : DateTime.Now).ToString("yyyy-MM-dd--HH.mm.ss");
-        Header = $"{TimeStamp}|{LogLevelToString(logLevel)}|{categoryName}|";
+        Header = EventIdText.Length > 0
+            ? $"{TimeStamp}|{LogLevelToString(logLevel)}|{categoryName}|{EventIdText}|"
+            : $"{TimeStamp}|{LogLevelToString(logLevel)}|{categoryName}|";
 
         // Build the final message text once so Message stays effectively
-        // immutable after construction.
+        // immutable after construction. The EventId no longer rides on the
+        // message body — it lives in Header so PadMessage indents past it.
         string finalMessage = message;
-
-        if (eventId.Id != 0)
-        {
-            finalMessage += $" [{eventId.Id}]";
-        }
 
         if (exception is not null)
         {
@@ -48,6 +55,24 @@ public sealed record LogMessage
 
         Message = finalMessage;
         PaddedMessage = PadMessage(Header, finalMessage);
+    }
+
+    /// <summary>
+    /// Formats an EventId for display. Returns empty when both the Id is
+    /// zero and the Name is null or empty (the default EventId case).
+    /// </summary>
+    private static string FormatEventId(EventId eventId)
+    {
+        bool hasId = eventId.Id != 0;
+        bool hasName = string.IsNullOrEmpty(eventId.Name) == false;
+
+        return (hasId, hasName) switch
+        {
+            (true, true) => $"{eventId.Id}:{eventId.Name}",
+            (true, false) => eventId.Id.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            (false, true) => eventId.Name!,
+            _ => string.Empty,
+        };
     }
 
     /// <summary>

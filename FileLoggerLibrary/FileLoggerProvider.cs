@@ -223,7 +223,9 @@ internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
                 // so no allocations happen mid-write.
                 string prefix = $"{message.TimeStamp}|";
                 string levelText = LogMessage.LogLevelToString(message.LogLevel);
-                string middle = $"|{message.CategoryName}|";
+                string middle = message.EventIdText.Length > 0
+                    ? $"|{message.CategoryName}|{message.EventIdText}|"
+                    : $"|{message.CategoryName}|";
 
                 WriteColoredLine(prefix, levelText, middle, body, GetLevelColor(message.LogLevel, ConsoleColor.Gray));
             }
@@ -263,7 +265,9 @@ internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
     private void WriteMultiLineFormatMessage(LogMessage message)
     {
         string levelText = LogMessage.LogLevelToString(message.LogLevel);
-        string headerTail = $"|{message.CategoryName}]";
+        string headerTail = message.EventIdText.Length > 0
+            ? $"|{message.CategoryName}|{message.EventIdText}]"
+            : $"|{message.CategoryName}]";
         string bodyLine = $"{message.Message}{Environment.NewLine}";
 
         // Pre-built single-string form used by both the no-color console path
