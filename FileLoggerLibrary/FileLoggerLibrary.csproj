@@ -27,6 +27,8 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.3" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Configuration" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.2" />
   </ItemGroup>
 
   <!-- .NET 9 dependencies -->
@@ -34,6 +36,8 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.15" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.15" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.15" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Configuration" Version="9.0.15" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.15" />
   </ItemGroup>
 
   <!-- .NET 10 dependencies -->
@@ -41,6 +45,8 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.7" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.7" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.7" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Configuration" Version="10.0.7" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.7" />
   </ItemGroup>
 
 </Project>

@@ -1,7 +1,9 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.Frozen;
+using System.Reflection;
 using System.Runtime.Versioning;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace FileLoggerLibrary;
 
@@ -14,6 +16,7 @@ internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
     private readonly ConcurrentDictionary<string, FileLogger> _loggers = new(StringComparer.OrdinalIgnoreCase);
     private readonly BlockingCollection<LogMessage> _messageQueue = new(DefaultQueueCapacity);
     private readonly Task _processMessages;
+    private readonly IDisposable? _onChangeRegistration;
     private FileStream? _logStream = null;
     private StreamWriter? _logWriter = null;
     private readonly object _lockObj = new();
@@ -25,19 +28,23 @@ internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
     /// the time of enqueue. Useful for diagnostics under bursty load.
     /// </summary>
     public long DroppedMessageCount => Interlocked.Read(ref _droppedMessageCount);
-    public string? LogName { get; private set; }
+
+    // File-lifecycle properties — captured at construction; not reloaded.
+    public string LogName { get; }
     public string? LogFilename { get; private set; }
-    public string LogFolder { get; private set; } = "";
+    public string LogFolder { get; }
     public int LogIncrement { get; private set; } = 0;
-    public long LogMaxBytes { get; private set; } = 50 * 1048576;
-    public uint LogMaxCount { get; private set; } = 10;
+    public long LogMaxBytes { get; }
+    public uint LogMaxCount { get; }
+
+    // Runtime-tunable properties — reloaded from IOptionsMonitor on change.
     public LogLevel LogMinLevel { get; private set; } = LogLevel.Trace;
-    public bool UseUtcTimestamp { get; set; } = false;
-    public bool MultiLineFormat { get; set; } = false;
-    public bool IndentMultilineMessages { get; set; } = true;
-    public bool ConsoleLogging { get; set; } = true;
-    public bool EnableConsoleColors { get; set; } = true;
-    public Func<LogMessage, string>? LogEntryFormatter { get; set; }
+    public bool UseUtcTimestamp { get; private set; }
+    public bool MultiLineFormat { get; private set; }
+    public bool IndentMultilineMessages { get; private set; } = true;
+    public bool ConsoleLogging { get; private set; } = true;
+    public bool EnableConsoleColors { get; private set; } = true;
+    public Func<LogMessage, string>? LogEntryFormatter { get; private set; }
 
     /// <summary>
     /// Immutable fallback palette used when no LogLevelColors are supplied
@@ -65,75 +72,53 @@ internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
     public IReadOnlyDictionary<LogLevel, ConsoleColor> LogLevelColors { get; private set; } = s_defaultLevelColors;
 
     /// <summary>
-    /// Default FileLoggerProvider constructor, instantiates a new log file instance.
-    /// 
-    /// For reference:
-    ///   1 MB = 1000000 Bytes (in decimal)
-    ///   1 MB = 1048576 Bytes (in binary)
+    /// Constructs a <see cref="FileLoggerProvider"/> driven by the options
+    /// pattern.
     /// </summary>
-    /// <param name="logName">Name for log file.</param>
-    /// <param name="logFolder">Path where logs files will be saved.</param>
-    /// <param name="logMaxBytes">Maximum size (in bytes) for the log file. If unspecified, the default is 50MB per log.</param>
-    /// <param name="logMaxCount">Maximum count of log files for rotation. If unspecified, the default is 10 logs.</param>
-    /// <param name="logMinLevel">Minimum log level for output. If unspecified, the default value is LogLevel.Trace.</param>
-    /// <param name="multilineFormat">Uses a multiline message format. If unspecified, the default value is false for a single line format.</param>
-    /// <param name="indentMultilineMessages">Indent multiline messages. If unspecified, the default value is true.</param>
-    /// <param name="consoleLogging">Enable logging to console. If unspecified, the default value is true.</param>
-    /// <param name="enableConsoleColors">Enable colorful console logging. If unspecified, the default value is true.</param>
-    /// <param name="logEntryFormatter">Custom formatter for logging entry. If unspecified, the default value is true.</param>
-    /// <returns>An initialized FileLoggerProvider</returns>
-    public FileLoggerProvider(string logName,
-                              string? logFolder = null,
-                              long logMaxBytes = 50 * 1048576,
-                              uint logMaxCount = 10,
-                              LogLevel logMinLevel = LogLevel.Trace,
-                              bool useUtcTimestamp = false,
-                              bool multiLineFormat = false,
-                              bool indentMultilineMessages = true,
-                              bool consoleLogging = true,
-                              bool enableConsoleColors = true,
-                              Func<LogMessage, string>? logEntryFormatter = null) : this(new()
-                              {
-                                  LogName = logName,
-                                  LogFolder = logFolder,
-                                  LogMaxBytes = logMaxBytes,
-                                  LogMaxCount = logMaxCount,
-                                  LogMinLevel = logMinLevel,
-                                  UseUtcTimestamp = useUtcTimestamp,
-                                  MultiLineFormat = multiLineFormat,
-                                  IndentMultilineMessages = indentMultilineMessages,
-                                  ConsoleLogging = consoleLogging,
-                                  EnableConsoleColors = enableConsoleColors,
-                                  LogEntryFormatter = logEntryFormatter
-                              })
+    /// <remarks>
+    /// File-lifecycle options (LogName, LogFolder, LogMaxBytes, LogMaxCount)
+    /// are captured once at construction and are not reloaded on subsequent
+    /// option changes — restart the host to change them. Runtime-tunable
+    /// options (LogMinLevel, formatting flags, console colors,
+    /// LogEntryFormatter) are re-applied automatically when the bound
+    /// <see cref="IOptionsMonitor{TOptions}"/> reports a change.
+    /// </remarks>
+    public FileLoggerProvider(IOptionsMonitor<FileLoggerOptions> options)
     {
-        // Builds FileLoggerOptions object and implements next constructor
+        ArgumentNullException.ThrowIfNull(options);
+
+        FileLoggerOptions current = options.CurrentValue;
+
+        // File-lifecycle: captured once.
+        LogName = string.IsNullOrWhiteSpace(current.LogName)
+            ? Assembly.GetEntryAssembly()?.GetName().Name ?? "log"
+            : current.LogName;
+
+        LogFolder = string.IsNullOrWhiteSpace(current.LogFolder)
+            ? Path.Combine(Environment.CurrentDirectory, "log")
+            : current.LogFolder;
+        Directory.CreateDirectory(LogFolder);
+
+        LogMaxBytes = current.LogMaxBytes;
+        LogMaxCount = current.LogMaxCount;
+
+        // Runtime tunables: applied now and re-applied on every change.
+        ApplyRuntimeOptions(current);
+        _onChangeRegistration = options.OnChange(ApplyRuntimeOptions);
+
+        Open();
+
+        // Start processing message queue
+        _processMessages = Task.Factory.StartNew(DequeueMessages, this, TaskCreationOptions.LongRunning);
     }
 
-    /// <summary>
-    /// FileLogger constructor, based on FileLoggerOptions configuration.
-    /// </summary>
-    /// <param name="options">Configuration options to configure the FileLoggerProvider instance.</param>
-    /// <returns>An initialized FileLoggerProvider</returns>
-    public FileLoggerProvider(FileLoggerOptions options)
+    private void ApplyRuntimeOptions(FileLoggerOptions options)
     {
-        if (string.IsNullOrWhiteSpace(options.LogFolder))
+        if (options is null)
         {
-            LogFolder = Path.Combine(Environment.CurrentDirectory, "log");
-        }
-        else if (Directory.Exists(options.LogFolder) == false)
-        {
-            LogFolder = options.LogFolder;
-        }
-        else
-        {
-            LogFolder = options.LogFolder;
+            return;
         }
 
-        Directory.CreateDirectory(LogFolder);
-        LogName = options.LogName;
-        LogMaxBytes = options.LogMaxBytes;
-        LogMaxCount = options.LogMaxCount;
         LogMinLevel = options.LogMinLevel;
         UseUtcTimestamp = options.UseUtcTimestamp;
         MultiLineFormat = options.MultiLineFormat;
@@ -141,18 +126,13 @@ internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
         ConsoleLogging = options.ConsoleLogging;
         EnableConsoleColors = options.EnableConsoleColors;
 
-        // Snapshot the caller-supplied dictionary so post-construction
-        // mutations on the options instance cannot race with the dequeue
-        // thread.
+        // Snapshot the caller-supplied dictionary so post-bind mutations on
+        // the options instance cannot race with the dequeue thread.
         LogLevelColors = options.LogLevelColors is null
             ? s_defaultLevelColors
             : options.LogLevelColors.ToFrozenDictionary();
 
         LogEntryFormatter = options.LogEntryFormatter;
-        Open();
-
-        // Start processing message queue
-        _processMessages = Task.Factory.StartNew(DequeueMessages, this, TaskCreationOptions.LongRunning);
     }
 
     /// <summary>
@@ -529,6 +509,7 @@ internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
     /// </summary>
     public void Dispose()
     {
+        _onChangeRegistration?.Dispose();
         _messageQueue.CompleteAdding();
 
         try
