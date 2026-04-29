@@ -12,16 +12,14 @@ internal sealed class FileLogger : ILogger
     /// </summary>
     /// <param name="fileLoggerProvider">The log provider this FileLogger instance is based.</param>
     /// <param name="categoryName">Log or category name for this FileLogger instance.</param>
-    /// <exception cref="ArgumentException">Null or empty arguments are not accepted.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="fileLoggerProvider"/> is null.</exception>
+    /// <exception cref="ArgumentException"><paramref name="categoryName"/> is null, empty, or whitespace.</exception>
     public FileLogger(FileLoggerProvider fileLoggerProvider, string categoryName)
     {
-        _fileLoggerProvider = fileLoggerProvider ?? throw new ArgumentException("Log provider must not be NULL");
+        ArgumentNullException.ThrowIfNull(fileLoggerProvider);
+        ArgumentException.ThrowIfNullOrWhiteSpace(categoryName);
 
-        if (string.IsNullOrWhiteSpace(categoryName))
-        {
-            throw new ArgumentException("Log name must not be NULL or empty");
-        }
-
+        _fileLoggerProvider = fileLoggerProvider;
         _categoryName = categoryName;
     }
 
@@ -32,7 +30,7 @@ internal sealed class FileLogger : ILogger
     /// <returns></returns>
     public bool IsEnabled(LogLevel logLevel)
     {
-        return logLevel >= _fileLoggerProvider.LogMinLevel;
+        return logLevel != LogLevel.None && logLevel >= _fileLoggerProvider.LogMinLevel;
     }
 
     /// <summary>
@@ -43,7 +41,7 @@ internal sealed class FileLogger : ILogger
     /// <returns>A disposable object that ends the logical operation scope on dispose.</returns>
     IDisposable? ILogger.BeginScope<TState>(TState state)
     {
-        return null;
+        return NullScope.Instance;
     }
 
     /// <summary>
@@ -55,7 +53,7 @@ internal sealed class FileLogger : ILogger
     /// <param name="state">The entry to be written. Can be also an object.</param>
     /// <param name="exception">The exception related to this entry.</param>
     /// <param name="formatter">Function to create a String message of the state and exception.</param>
-    /// <exception cref="ArgumentNullException"></exception>
+    /// <exception cref="ArgumentNullException"><paramref name="formatter"/> is null.</exception>
     public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
     {
         if (IsEnabled(logLevel) == false)
@@ -63,9 +61,16 @@ internal sealed class FileLogger : ILogger
             return;
         }
 
-        ArgumentException.ThrowIfNullOrEmpty(nameof(formatter));
+        ArgumentNullException.ThrowIfNull(formatter);
         string message = formatter(state, exception);
         LogMessage logMessage = new(message, exception, logLevel, _categoryName, eventId, _fileLoggerProvider.UseUtcTimestamp);
         _fileLoggerProvider.EnqueueMessage(logMessage);
+    }
+
+    private sealed class NullScope : IDisposable
+    {
+        public static NullScope Instance { get; } = new();
+        private NullScope() { }
+        public void Dispose() { }
     }
 }
