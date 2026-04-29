@@ -11,15 +11,19 @@ namespace FileLoggerLibrary;
 [ProviderAlias("FileLogger")]
 internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
 {
-    private const int DefaultQueueCapacity = 1024;
+    private const int s_defaultQueueCapacity = 1024;
 
     private readonly ConcurrentDictionary<string, FileLogger> _loggers = new(StringComparer.OrdinalIgnoreCase);
-    private readonly BlockingCollection<LogMessage> _messageQueue = new(DefaultQueueCapacity);
+    private readonly BlockingCollection<LogMessage> _messageQueue = new(s_defaultQueueCapacity);
     private readonly Task _processMessages;
     private readonly IDisposable? _onChangeRegistration;
     private FileStream? _logStream = null;
     private StreamWriter? _logWriter = null;
+#if NET9_0_OR_GREATER
+    private readonly Lock _lockObj = new();
+#else
     private readonly object _lockObj = new();
+#endif
     private bool _rollMode = false;
     private long _droppedMessageCount;
 
@@ -202,7 +206,11 @@ internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
     /// concurrent providers or external Console writers cannot interleave
     /// between the prefix/level/middle/body runs and bleed colors.
     /// </summary>
+#if NET9_0_OR_GREATER
+    private static readonly Lock s_consoleSync = new();
+#else
     private static readonly object s_consoleSync = new();
+#endif
 
     /// <summary>
     /// Writes single-line formatted log message.

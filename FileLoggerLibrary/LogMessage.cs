@@ -121,7 +121,7 @@ public sealed record LogMessage
             if (newlineIndex < 0)
             {
                 line = remaining;
-                remaining = ReadOnlySpan<char>.Empty;
+                remaining = [];
             }
             else
             {
