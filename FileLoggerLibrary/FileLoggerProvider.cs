@@ -192,6 +192,13 @@ internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
     }
 
     /// <summary>
+    /// Serializes the multi-segment colored writes of a single log entry so
+    /// concurrent providers or external Console writers cannot interleave
+    /// between the prefix/level/middle/body runs and bleed colors.
+    /// </summary>
+    private static readonly object s_consoleSync = new();
+
+    /// <summary>
     /// Writes single-line formatted log message.
     /// 
     /// Example:
@@ -206,36 +213,27 @@ internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
     private void WriteSingleLineFormatMessage(LogMessage message)
     {
         string body = IndentMultilineMessages ? message.PaddedMessage : message.Message;
+        string fullLine = $"{message.Header}{body}";
 
         if (ConsoleLogging)
         {
             if (EnableConsoleColors)
             {
-                ConsoleColor originalColor = Console.ForegroundColor;
-                ConsoleColor levelColor = GetLevelColor(message.LogLevel, originalColor);
+                // Pre-build segments before entering the color critical section
+                // so no allocations happen mid-write.
+                string prefix = $"{message.TimeStamp}|";
+                string levelText = LogMessage.LogLevelToString(message.LogLevel);
+                string middle = $"|{message.CategoryName}|";
 
-                try
-                {
-                    Console.Write($"{message.TimeStamp}|");
-                    Console.ForegroundColor = levelColor;
-                    Console.Write(LogMessage.LogLevelToString(message.LogLevel));
-                    Console.ForegroundColor = originalColor;
-                    Console.Write($"|{message.CategoryName}|");
-                    Console.ForegroundColor = levelColor;
-                    Console.WriteLine(body);
-                }
-                finally
-                {
-                    Console.ForegroundColor = originalColor;
-                }
+                WriteColoredLine(prefix, levelText, middle, body, GetLevelColor(message.LogLevel, ConsoleColor.Gray));
             }
             else
             {
-                Console.WriteLine($"{message.Header}{body}");
+                Console.Out.WriteLine(fullLine);
             }
         }
 
-        _logWriter?.WriteLine($"{message.Header}{body}");
+        _logWriter?.WriteLine(fullLine);
     }
 
     /// <summary>
@@ -264,41 +262,60 @@ internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
     /// <param name="message">LogMessage object to be logged.</param>
     private void WriteMultiLineFormatMessage(LogMessage message)
     {
+        string levelText = LogMessage.LogLevelToString(message.LogLevel);
+        string headerTail = $"|{message.CategoryName}]";
+        string bodyLine = $"{message.Message}{Environment.NewLine}";
+
+        // Pre-built single-string form used by both the no-color console path
+        // and the file path so each is one atomic WriteLine.
+        string flatLine = $"[{message.TimeStamp}|{levelText}{headerTail}{Environment.NewLine}{bodyLine}";
+
         if (ConsoleLogging)
         {
             if (EnableConsoleColors)
             {
-                ConsoleColor originalColor = Console.ForegroundColor;
-                ConsoleColor levelColor = GetLevelColor(message.LogLevel, originalColor);
+                string prefix = $"[{message.TimeStamp}|";
+                string middle = $"{headerTail}{Environment.NewLine}";
 
-                try
-                {
-                    Console.Write($"[{message.TimeStamp}|");
-                    Console.ForegroundColor = levelColor;
-                    Console.Write(LogMessage.LogLevelToString(message.LogLevel));
-                    Console.ForegroundColor = originalColor;
-                    Console.Write($"|{message.CategoryName}]{Environment.NewLine}");
-                    Console.ForegroundColor = levelColor;
-                    Console.WriteLine($"{message.Message}{Environment.NewLine}");
-                }
-                finally
-                {
-                    Console.ForegroundColor = originalColor;
-                }
+                WriteColoredLine(prefix, levelText, middle, bodyLine, GetLevelColor(message.LogLevel, ConsoleColor.Gray));
             }
             else
             {
-                Console.Write($"[{message.TimeStamp}|");
-                Console.Write(LogMessage.LogLevelToString(message.LogLevel));
-                Console.Write($"|{message.CategoryName}]{Environment.NewLine}");
-                Console.WriteLine($"{message.Message}{Environment.NewLine}");
+                Console.Out.WriteLine(flatLine);
             }
         }
 
-        _logWriter?.Write($"[{message.TimeStamp}|");
-        _logWriter?.Write(LogMessage.LogLevelToString(message.LogLevel));
-        _logWriter?.Write($"|{message.CategoryName}]{Environment.NewLine}");
-        _logWriter?.WriteLine($"{message.Message}{Environment.NewLine}");
+        _logWriter?.WriteLine(flatLine);
+    }
+
+    /// <summary>
+    /// Emits a four-segment colored line atomically: <paramref name="prefix"/>
+    /// in the default color, <paramref name="levelText"/> and
+    /// <paramref name="body"/> in <paramref name="levelColor"/>, and
+    /// <paramref name="middle"/> in the default color. The whole sequence is
+    /// held under a single console lock so concurrent writers cannot
+    /// interleave between segments.
+    /// </summary>
+    private static void WriteColoredLine(string prefix, string levelText, string middle, string body, ConsoleColor levelColor)
+    {
+        lock (s_consoleSync)
+        {
+            ConsoleColor originalColor = Console.ForegroundColor;
+            try
+            {
+                Console.Out.Write(prefix);
+                Console.ForegroundColor = levelColor;
+                Console.Out.Write(levelText);
+                Console.ForegroundColor = originalColor;
+                Console.Out.Write(middle);
+                Console.ForegroundColor = levelColor;
+                Console.Out.WriteLine(body);
+            }
+            finally
+            {
+                Console.ForegroundColor = originalColor;
+            }
+        }
     }
 
     private ConsoleColor GetLevelColor(LogLevel logLevel, ConsoleColor fallback)
