@@ -144,14 +144,15 @@ internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
     {
         foreach (LogMessage message in _messageQueue.GetConsumingEnumerable())
         {
-            if (string.IsNullOrWhiteSpace(LogFilename))
+            if (_logStream is null)
             {
-                throw new InvalidOperationException("Log filename is null or empty");
+                throw new InvalidOperationException("Log stream is not open.");
             }
 
-            long logSizeBytes = new FileInfo(LogFilename).Length;
-
-            if (logSizeBytes >= LogMaxBytes)
+            // Reading FileStream.Position is an O(1) internal field read — no
+            // kernel stat call and no FileInfo allocation per message, unlike
+            // the previous `new FileInfo(LogFilename).Length` check.
+            if (_logStream.Position >= LogMaxBytes)
             {
                 Open();
             }
