@@ -38,6 +38,22 @@ public sealed class FileLoggerOptions
     public uint LogMaxCount { get; set; } = 10;
 
     /// <summary>
+    /// Whether the underlying <see cref="StreamWriter"/> is configured with
+    /// AutoFlush.
+    /// <remarks>
+    /// True (default) flushes every log line to the OS immediately —
+    /// strong durability, slower under burst load. Set false to let the
+    /// StreamWriter buffer writes (default 4 KB), which reduces syscall
+    /// overhead for high-throughput scenarios at the cost of losing the
+    /// last few hundred bytes on a hard crash. The buffer is always
+    /// flushed during graceful Dispose. This option is captured at
+    /// construction; a change via <see cref="Microsoft.Extensions.Options.IOptionsMonitor{TOptions}"/>
+    /// takes effect on the next log rotation.
+    /// </remarks>
+    /// </summary>
+    public bool AutoFlush { get; set; } = true;
+
+    /// <summary>
     /// Determines the minimum logging level to be logged.
     /// <remarks>
     /// The default is LogLevel.Trace, for maximum logging.

@@ -36,6 +36,7 @@ internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
     public int LogIncrement { get; private set; } = 0;
     public long LogMaxBytes { get; }
     public uint LogMaxCount { get; }
+    public bool AutoFlush { get; }
 
     // Runtime-tunable properties — reloaded from IOptionsMonitor on change.
     public LogLevel LogMinLevel { get; private set; } = LogLevel.Trace;
@@ -101,6 +102,7 @@ internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
 
         LogMaxBytes = current.LogMaxBytes;
         LogMaxCount = current.LogMaxCount;
+        AutoFlush = current.AutoFlush;
 
         // Runtime tunables: applied now and re-applied on every change.
         ApplyRuntimeOptions(current);
@@ -155,14 +157,16 @@ internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
     {
         foreach (LogMessage message in _messageQueue.GetConsumingEnumerable())
         {
-            if (_logStream is null)
+            if (_logStream is null || _logWriter is null)
             {
                 throw new InvalidOperationException("Log stream is not open.");
             }
 
             // Reading FileStream.Position is an O(1) internal field read — no
             // kernel stat call and no FileInfo allocation per message, unlike
-            // the previous `new FileInfo(LogFilename).Length` check.
+            // the previous `new FileInfo(LogFilename).Length` check. With
+            // AutoFlush=false, position can lag the StreamWriter buffer by
+            // up to ~4 KB; rotation may fire that much past LogMaxBytes.
             if (_logStream.Position >= LogMaxBytes)
             {
                 Open();
@@ -172,12 +176,14 @@ internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
             {
                 if (LogEntryFormatter != null)
                 {
+                    string formatted = LogEntryFormatter(message);
+
                     if (ConsoleLogging)
                     {
-                        Console.WriteLine(LogEntryFormatter(message));
+                        Console.WriteLine(formatted);
                     }
 
-                    _logWriter?.WriteLine(LogEntryFormatter(message));
+                    _logWriter!.WriteLine(formatted);
                 }
                 else if (MultiLineFormat)
                 {
@@ -235,7 +241,7 @@ internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
             }
         }
 
-        _logWriter?.WriteLine(fullLine);
+        _logWriter!.WriteLine(fullLine);
     }
 
     /// <summary>
@@ -289,7 +295,7 @@ internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
             }
         }
 
-        _logWriter?.WriteLine(flatLine);
+        _logWriter!.WriteLine(flatLine);
     }
 
     /// <summary>
@@ -378,150 +384,155 @@ internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
     }
 
     /// <summary>
-    /// Checks if the specified file is in-use.
+    /// Opens a new log file (rotating to the next slot) or, on the very
+    /// first call, resumes an existing partial log.
     /// </summary>
-    /// <param name="fileName">The filename to check.</param>
-    /// <returns></returns>
-    private static bool IsFileInUse(string fileName)
+    /// <remarks>
+    /// Called only from the constructor and from the dequeue thread when a
+    /// rotation threshold is hit, so concurrent invocation is impossible.
+    /// </remarks>
+    private void Open()
     {
-        if (File.Exists(fileName))
-        {
-            try
-            {
-                FileInfo fileInfo = new(fileName);
-                FileStream fileStream = fileInfo.Open(FileMode.Open, FileAccess.ReadWrite, FileShare.None);
-                fileStream.Dispose();
-                return false;
-            }
-            catch (Exception)
-            {
-                return true;
-            }
-        }
-        else
-        {
-            return false;
-        }
-    }
-
-    /// <summary>
-    /// Opens a new log file or resumes an existing one.
-    /// </summary>
-    public void Open()
-    {
-        // If open, close the log file.
-        if (LogFilename != null &&
-            _logWriter != null &&
-            _logWriter.BaseStream != null)
+        if (_logWriter != null)
         {
             Close();
         }
 
-        // Select next available log increment (sets LogFilename).
-        IncrementLog();
-
-        if (string.IsNullOrWhiteSpace(LogFilename))
-        {
-            throw new InvalidOperationException("Log filename is null or empty");
-        }
-
-        // Append the log file.
-        _logStream = new FileStream(LogFilename, FileMode.Append, FileAccess.Write, FileShare.Read);
-        _logWriter = new StreamWriter(_logStream)
-        {
-            AutoFlush = true
-        };
-    }
-
-    /// <summary>
-    /// Privately sets 'LogFilename' with next available increment in the
-    /// log file rotation.
-    /// </summary>
-    private void IncrementLog()
-    {
         if (_rollMode == false)
         {
-            // After we find our starting point, we will permanently be in 
-            // rollMode, meaning we will always increment/wrap to the next
-            // available log file increment.
+            // First open: latch into roll mode unconditionally so a partial
+            // failure here does not put us back in resume-mode on the next
+            // attempt.
             _rollMode = true;
 
-            // Base case -- Find nearest unfilled log to continue
-            //              appending, or nearest unused increment
-            //              to start writing a new file.
-            for (int i = 0; i < LogMaxCount; i++)
+            if (TryResumeOrTakeUnused())
             {
-                string fileName = Path.Combine(LogFolder, $"{LogName}_{i}.log");
-
-                if (File.Exists(fileName))
-                {
-                    long length = new FileInfo(fileName).Length;
-
-                    if (length < LogMaxBytes && IsFileInUse(fileName) == false)
-                    {
-                        // Append unfilled log.
-                        LogFilename = fileName;
-                        LogIncrement = i;
-                        return;
-                    }
-                }
-                else
-                {
-                    // Take this unused increment.
-                    LogFilename = fileName;
-                    LogIncrement = i;
-                    return;
-                }
+                return;
             }
 
-            // Full house? -- Start over from the top.
-            LogFilename = Path.Combine(LogFolder, $"{LogName}_0.log");
-            LogIncrement = 0;
+            // Every slot exists, is full, or is locked — wrap to slot 0 and
+            // truncate. FileMode.Create is atomic truncate-or-create, which
+            // closes the previous Delete-then-Append TOCTOU window.
+            if (TryOpenSlot(0, FileMode.Create))
+            {
+                return;
+            }
         }
         else
         {
-            // Inductive case -- We are in roll mode, so we just
-            //                   use the next increment file, or
-            //                   wrap around to the starting point.
-            if (LogIncrement + 1 < LogMaxCount)
+            // Subsequent rotation: try the next slot first; if it is locked
+            // by another writer, scan forward until something opens.
+            int start = (LogIncrement + 1) % (int)LogMaxCount;
+            for (int step = 0; step < LogMaxCount; step++)
             {
-                // Next log increment.
-                LogFilename = Path.Combine(LogFolder, $"{LogName}_{++LogIncrement}.log");
-            }
-            else
-            {
-                // Start over from the top.
-                LogFilename = Path.Combine(LogFolder, $"{LogName}_0.log");
-                LogIncrement = 0;
+                int candidate = (start + step) % (int)LogMaxCount;
+                if (TryOpenSlot(candidate, FileMode.Create))
+                {
+                    return;
+                }
             }
         }
 
-        // Delete existing log, before using it.
-        File.Delete(LogFilename);
+        throw new InvalidOperationException(
+            $"Unable to open any log slot under '{LogFolder}'; all {LogMaxCount} candidates are locked by another process.");
     }
 
     /// <summary>
-    /// Closes the log file.
+    /// Initial-open scan: walks slots 0..N-1 looking for the first
+    /// appendable partial log, or the first unused slot. Returns false if
+    /// every slot is full or locked.
     /// </summary>
-    /// <returns>Returns true if the log file successfully closed, false otherwise.</returns>
-    public bool Close()
+    private bool TryResumeOrTakeUnused()
     {
-        try
+        for (int i = 0; i < LogMaxCount; i++)
         {
-            lock (_lockObj)
+            string candidate = Path.Combine(LogFolder, $"{LogName}_{i}.log");
+
+            if (File.Exists(candidate) == false)
             {
-                // Don't call Log() here, this will result in a -=#StackOverflow#=-.
-                _logWriter?.Dispose();
-                _logStream?.Dispose();
-                _logWriter = null;
-                _logStream = null;
-                LogFilename = null;
+                // Unused slot — claim it. CreateNew fails atomically if
+                // another process raced us into the same name, in which
+                // case we move on rather than overwriting their data.
+                if (TryOpenSlot(i, FileMode.CreateNew))
+                {
+                    return true;
+                }
+
+                continue;
+            }
+
+            if (new FileInfo(candidate).Length >= LogMaxBytes)
+            {
+                continue;
+            }
+
+            // Partial existing log: try to grab it for append. A failure
+            // here means another process has it open with restrictive
+            // sharing — try the next slot.
+            if (TryOpenSlot(i, FileMode.Append))
+            {
                 return true;
             }
         }
-        catch (Exception)
+
+        return false;
+    }
+
+    /// <summary>
+    /// Opens the requested slot with the supplied <see cref="FileMode"/>,
+    /// publishes <see cref="_logStream"/> / <see cref="_logWriter"/> /
+    /// <see cref="LogFilename"/> / <see cref="LogIncrement"/> on success,
+    /// or returns false on a sharing failure so the caller can keep
+    /// scanning.
+    /// </summary>
+    private bool TryOpenSlot(int increment, FileMode mode)
+    {
+        string fileName = Path.Combine(LogFolder, $"{LogName}_{increment}.log");
+
+        try
+        {
+            FileStream stream = new(fileName, mode, FileAccess.Write, FileShare.Read);
+            StreamWriter writer = new(stream)
+            {
+                AutoFlush = AutoFlush,
+            };
+            _logStream = stream;
+            _logWriter = writer;
+            LogFilename = fileName;
+            LogIncrement = increment;
+            return true;
+        }
+        catch (IOException)
         {
             return false;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Closes the log file. Called only on the dequeue thread (rotation
+    /// path) or during Dispose after the dequeue task has drained.
+    /// </summary>
+    private void Close()
+    {
+        lock (_lockObj)
+        {
+            // Don't call Log() here — would re-enqueue and recurse on
+            // shutdown, producing a stack overflow.
+            try
+            {
+                _logWriter?.Dispose();
+                _logStream?.Dispose();
+            }
+            catch (IOException) { }
+            catch (ObjectDisposedException) { }
+
+            _logWriter = null;
+            _logStream = null;
+            LogFilename = null;
         }
     }
 
