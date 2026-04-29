@@ -8,13 +8,22 @@ namespace FileLoggerLibrary;
 [ProviderAlias("FileLogger")]
 internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
 {
+    private const int DefaultQueueCapacity = 1024;
+
     private readonly ConcurrentDictionary<string, FileLogger> _loggers = new(StringComparer.OrdinalIgnoreCase);
-    private readonly BlockingCollection<LogMessage> _messageQueue = new(1024);
+    private readonly BlockingCollection<LogMessage> _messageQueue = new(DefaultQueueCapacity);
     private readonly Task _processMessages;
     private FileStream? _logStream = null;
     private StreamWriter? _logWriter = null;
     private readonly object _lockObj = new();
     private bool _rollMode = false;
+    private long _droppedMessageCount;
+
+    /// <summary>
+    /// Number of messages that were dropped because the queue was full at
+    /// the time of enqueue. Useful for diagnostics under bursty load.
+    /// </summary>
+    public long DroppedMessageCount => Interlocked.Read(ref _droppedMessageCount);
     public string? LogName { get; private set; }
     public string? LogFilename { get; private set; }
     public string LogFolder { get; private set; } = "";
@@ -296,20 +305,31 @@ internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
     }
 
     /// <summary>
-    /// Enqueues a log message for asynchronous write to file, allowing the caller to move
-    /// on with business.
+    /// Enqueues a log message for asynchronous write to file, allowing the
+    /// caller to move on with business.
     /// </summary>
-    /// <param name="message"></param>
+    /// <remarks>
+    /// Uses a non-blocking <c>TryAdd</c> so a saturated queue can never block
+    /// application threads — over-capacity messages are dropped and counted
+    /// via <see cref="DroppedMessageCount"/>.
+    /// </remarks>
     internal void EnqueueMessage(LogMessage message)
     {
-        if (_messageQueue.IsAddingCompleted == false)
+        if (_messageQueue.IsAddingCompleted)
         {
-            try
+            return;
+        }
+
+        try
+        {
+            if (_messageQueue.TryAdd(message) == false)
             {
-                _messageQueue.Add(message);
-                return;
+                Interlocked.Increment(ref _droppedMessageCount);
             }
-            catch (InvalidOperationException) { }
+        }
+        catch (InvalidOperationException)
+        {
+            // Lost the race with CompleteAdding(); safe to ignore.
         }
     }
 
@@ -496,6 +516,7 @@ internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
         catch (TaskCanceledException) { }
         catch (AggregateException ex) when (ex.InnerExceptions.Count == 1 && ex.InnerExceptions[0] is TaskCanceledException) { }
 
+        _messageQueue.Dispose();
         _loggers.Clear();
         Close();
     }
