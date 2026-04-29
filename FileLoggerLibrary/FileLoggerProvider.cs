@@ -193,50 +193,37 @@ internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
     /// <param name="message">LogMessage object to be logged.</param>
     private void WriteSingleLineFormatMessage(LogMessage message)
     {
+        string body = IndentMultilineMessages ? message.PaddedMessage : message.Message;
+
         if (ConsoleLogging)
         {
             if (EnableConsoleColors)
             {
                 ConsoleColor originalColor = Console.ForegroundColor;
-                Console.Write($"{message.TimeStamp}|");
-                Console.ForegroundColor = LogLevelColors[message.LogLevel];
-                Console.Write(LogMessage.LogLevelToString(message.LogLevel));
-                Console.ForegroundColor = originalColor;
-                Console.Write($"|{message.CategoryName}|");
-                Console.ForegroundColor = LogLevelColors[message.LogLevel];
+                ConsoleColor levelColor = GetLevelColor(message.LogLevel, originalColor);
 
-                if (IndentMultilineMessages)
+                try
                 {
-                    Console.WriteLine(message.PaddedMessage);
+                    Console.Write($"{message.TimeStamp}|");
+                    Console.ForegroundColor = levelColor;
+                    Console.Write(LogMessage.LogLevelToString(message.LogLevel));
+                    Console.ForegroundColor = originalColor;
+                    Console.Write($"|{message.CategoryName}|");
+                    Console.ForegroundColor = levelColor;
+                    Console.WriteLine(body);
                 }
-                else
+                finally
                 {
-                    Console.WriteLine(message.Message);
+                    Console.ForegroundColor = originalColor;
                 }
-
-                Console.ForegroundColor = originalColor;
             }
             else
             {
-                if (IndentMultilineMessages)
-                {
-                    Console.WriteLine($"{message.Header}{message.PaddedMessage}");
-                }
-                else
-                {
-                    Console.WriteLine($"{message.Header}{message.Message}");
-                }
+                Console.WriteLine($"{message.Header}{body}");
             }
         }
 
-        if (IndentMultilineMessages)
-        {
-            _logWriter?.WriteLine($"{message.Header}{message.PaddedMessage}");
-        }
-        else
-        {
-            _logWriter?.WriteLine($"{message.Header}{message.Message}");
-        }
+        _logWriter?.WriteLine($"{message.Header}{body}");
     }
 
     /// <summary>
@@ -270,14 +257,22 @@ internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
             if (EnableConsoleColors)
             {
                 ConsoleColor originalColor = Console.ForegroundColor;
-                Console.Write($"[{message.TimeStamp}|");
-                Console.ForegroundColor = LogLevelColors[message.LogLevel];
-                Console.Write(LogMessage.LogLevelToString(message.LogLevel));
-                Console.ForegroundColor = originalColor;
-                Console.Write($"|{message.CategoryName}]{Environment.NewLine}");
-                Console.ForegroundColor = LogLevelColors[message.LogLevel];
-                Console.WriteLine($"{message.Message}{Environment.NewLine}");
-                Console.ForegroundColor = originalColor;
+                ConsoleColor levelColor = GetLevelColor(message.LogLevel, originalColor);
+
+                try
+                {
+                    Console.Write($"[{message.TimeStamp}|");
+                    Console.ForegroundColor = levelColor;
+                    Console.Write(LogMessage.LogLevelToString(message.LogLevel));
+                    Console.ForegroundColor = originalColor;
+                    Console.Write($"|{message.CategoryName}]{Environment.NewLine}");
+                    Console.ForegroundColor = levelColor;
+                    Console.WriteLine($"{message.Message}{Environment.NewLine}");
+                }
+                finally
+                {
+                    Console.ForegroundColor = originalColor;
+                }
             }
             else
             {
@@ -292,6 +287,11 @@ internal sealed class FileLoggerProvider : ILoggerProvider, IDisposable
         _logWriter?.Write(LogMessage.LogLevelToString(message.LogLevel));
         _logWriter?.Write($"|{message.CategoryName}]{Environment.NewLine}");
         _logWriter?.WriteLine($"{message.Message}{Environment.NewLine}");
+    }
+
+    private ConsoleColor GetLevelColor(LogLevel logLevel, ConsoleColor fallback)
+    {
+        return LogLevelColors.TryGetValue(logLevel, out ConsoleColor color) ? color : fallback;
     }
 
     /// <summary>

@@ -19,29 +19,34 @@ public sealed class LogMessage
     /// </summary>
     public LogMessage(string message, Exception? exception, LogLevel logLevel, string categoryName, EventId eventId, bool useUtcTimestamp)
     {
-        Message = message;
+        ArgumentNullException.ThrowIfNull(message);
+        ArgumentNullException.ThrowIfNull(categoryName);
+
         Exception = exception;
         LogLevel = logLevel;
         CategoryName = categoryName;
         EventId = eventId;
-        TimeStamp = useUtcTimestamp ? DateTime.UtcNow.ToString("yyyy-MM-dd--HH.mm.ss") : DateTime.Now.ToString("yyyy-MM-dd--HH.mm.ss");
+        TimeStamp = (useUtcTimestamp ? DateTime.UtcNow : DateTime.Now).ToString("yyyy-MM-dd--HH.mm.ss");
         Header = $"{TimeStamp}|{LogLevelToString(logLevel)}|{categoryName}|";
+
+        // Build the final message text once so Message stays effectively
+        // immutable after construction.
+        string finalMessage = message;
 
         if (eventId.Id != 0)
         {
-            Message += $" [{eventId.Id}]";
+            finalMessage += $" [{eventId.Id}]";
         }
 
-        if (exception != null && message.Length > 0)
+        if (exception is not null)
         {
-            Message += $" [{exception.Message}]";
-        }
-        else if (exception != null && message.Length == 0)
-        {
-            Message = exception.Message;
+            finalMessage = finalMessage.Length > 0
+                ? $"{finalMessage} [{exception.Message}]"
+                : exception.Message;
         }
 
-        PaddedMessage = PadMessage(Header, Message);
+        Message = finalMessage;
+        PaddedMessage = PadMessage(Header, finalMessage);
     }
 
     /// <summary>
