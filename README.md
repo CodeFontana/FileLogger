@@ -7,6 +7,9 @@
 * Single-line, Multi-line or Custom log entry formats.
 * Indent multiline messages for easier reading and analysis.
 * Configurable color scheme for Console log messages, for easier reading.
+* Per-provider log level filtering via `Logging:FileLogger:LogLevel` in `appsettings.json`.
+* Live configuration reload via `IOptionsMonitor<FileLoggerOptions>` — runtime-tunable settings (`LogMinLevel`, formatting flags, console colors, custom formatter) update on `appsettings.json` change without restarting the host. File-lifecycle settings (`LogName`, `LogFolder`, `LogMaxBytes`, `LogMaxCount`, `AutoFlush`) are captured at startup.
+* `AutoFlush` durability knob — keep the default for per-message durability, or disable for higher throughput under burst load.
 
 ## Target frameworks
 .NET 8, .NET 9, .NET 10.
@@ -21,38 +24,42 @@
 
 ## How to use
 
-### Scenario #1: Quickstart
-The following will create 10x50MB rolling logs for 'FileLoggerDemo_x.log" with default settings:
+### Scenario #1: Quickstart with `appsettings.json` (recommended)
+Bind directly from configuration with the no-arg overload — `AddFileLogger()` calls `AddConfiguration()` and registers the options binding for you.
+
 ```csharp
 using FileLoggerLibrary;
 
 ...<omitted>...
 
 .ConfigureLogging((context, builder) =>
-  {
+{
     builder.ClearProviders();
-    builder.AddFileLogger("FileLoggerDemo");
-  })
+    builder.AddFileLogger();
+})
 ```
 
-### Scenario #2: Using appsettings.json
-  
 **appsettings.json** -- all options shown
 ```json
 {
   "Logging": {
     "LogLevel": {
-    "Default": "Trace",
-    "System": "Information",
-    "Microsoft": "Error"
+      "Default": "Information",
+      "Microsoft": "Warning"
     },
     "FileLogger": {
+      "LogLevel": {
+        "Default": "Trace",
+        "Microsoft.Hosting.Lifetime": "Information"
+      },
       "LogName": "FileLoggerDemo",
       "LogFolder": "",
       "LogMaxBytes": 52428800,
       "LogMaxCount": 10,
+      "AutoFlush": true,
+      "LogMinLevel": "Trace",
       "UseUtcTimestamp": false,
-      "MultilineFormat": false,
+      "MultiLineFormat": false,
       "IndentMultilineMessages": true,
       "ConsoleLogging": true,
       "EnableConsoleColors": true,
@@ -69,118 +76,83 @@ using FileLoggerLibrary;
   }
 }
 ```
-  
-**Program.cs** -- full file for complete context
+
+If `LogName` is omitted, the entry assembly name is used. If `LogFolder` is omitted, a `log` directory under the process's current directory is used.
+
+#### Per-provider log level filtering
+The `Logging:FileLogger:LogLevel` section above scopes filters to **just** the FileLogger provider. In the example, the file/console output captures `Trace` and above for application categories, while the global `Logging:LogLevel` keeps every other registered provider at `Information`/`Warning`. The provider's own `LogMinLevel` is also honored, and `AddFileLogger` will lower the framework's global `MinLevel` automatically when needed so trace messages actually reach the dispatcher.
+
+### Scenario #2: `appsettings.json` + an extra inline tweak
+Pass an `Action<FileLoggerOptions>` to override or supplement the bound configuration.
+
 ```csharp
 using FileLoggerLibrary;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
-namespace FileLoggerDemo;
+...<omitted>...
 
-internal class Program
+.ConfigureLogging((context, builder) =>
 {
-    static async Task Main(string[] args)
+    builder.ClearProviders();
+    builder.AddFileLogger(context.Configuration, configure =>
     {
-        try
-        {
-            await Host.CreateDefaultBuilder(args)
-                .ConfigureLogging((context, builder) =>
-                {
-                    builder.ClearProviders();
-                    builder.AddFileLogger(context.Configuration);
-                })
-                .ConfigureServices((hostContext, services) =>
-                {
-                    services.AddHostedService<MyApp>();
-                })
-                .RunConsoleAsync();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Unexpected error: {ex.Message}");
-        }
-    }
-}
+        configure.LogEntryFormatter = msg => $"{msg.TimeStamp} :: {msg.Message}";
+    });
+})
 ```
-  
-### Scenario #3: Using ConfigureLogging
-  
-**Program.cs**  -- full file for complete context, all FileLoggerOptions shown
+
+### Scenario #3: Pure code-based configuration
+For self-contained apps that don't read `appsettings.json`.
+
 ```csharp
 using FileLoggerLibrary;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
-namespace FileLoggerDemo;
+...<omitted>...
 
-internal class Program
+.ConfigureLogging((context, builder) =>
 {
-    static async Task Main(string[] args)
+    builder.ClearProviders();
+    builder.AddFileLogger(configure =>
     {
-        try
+        configure.LogName = "FileLoggerDemo";
+        configure.LogFolder = Path.Combine(Environment.CurrentDirectory, "log");
+        configure.LogMaxBytes = 50 * 1048576;
+        configure.LogMaxCount = 10;
+        configure.AutoFlush = true;
+        configure.LogMinLevel = LogLevel.Trace;
+        configure.UseUtcTimestamp = false;
+        configure.MultiLineFormat = false;
+        configure.IndentMultilineMessages = true;
+        configure.ConsoleLogging = true;
+        configure.EnableConsoleColors = true;
+        configure.LogLevelColors = new()
         {
-            await Host.CreateDefaultBuilder(args)
-                .ConfigureLogging((context, builder) =>
-                {
-                    builder.ClearProviders();
-                    builder.AddFileLogger(configure =>
-                    {
-                        configure.LogName = "FileLoggerDemo";
-                        configure.LogFolder = $@"{Environment.CurrentDirectory}\log";
-                        configure.LogMaxBytes = 50 * 1048576;
-                        configure.LogMaxCount = 10;
-                        configure.LogMinLevel = LogLevel.Trace;
-                        configure.UseUtcTimestamp = false;
-                        configure.MultiLineFormat = false;
-                        configure.IndentMultilineMessages = true;
-                        configure.ConsoleLogging = true;
-                        configure.EnableConsoleColors = true;
-                        configure.LogLevelColors = new Dictionary<LogLevel, ConsoleColor>()
-                        {
-                            [LogLevel.Trace] = ConsoleColor.Cyan,
-                            [LogLevel.Debug] = ConsoleColor.Blue,
-                            [LogLevel.Information] = ConsoleColor.Green,
-                            [LogLevel.Warning] = ConsoleColor.Yellow,
-                            [LogLevel.Error] = ConsoleColor.Red,
-                            [LogLevel.Critical] = ConsoleColor.DarkRed,
-                            [LogLevel.None] = ConsoleColor.White
-                        };
-                    });
-                })
-                .ConfigureServices((hostContext, services) =>
-                {
-                    services.AddHostedService<App>();
-                })
-                .RunConsoleAsync();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Unexpected error: {ex.Message}");
-        }
-    }
-}
+            [LogLevel.Trace] = ConsoleColor.Cyan,
+            [LogLevel.Debug] = ConsoleColor.Blue,
+            [LogLevel.Information] = ConsoleColor.Green,
+            [LogLevel.Warning] = ConsoleColor.Yellow,
+            [LogLevel.Error] = ConsoleColor.Red,
+            [LogLevel.Critical] = ConsoleColor.DarkRed,
+            [LogLevel.None] = ConsoleColor.White,
+        };
+    });
+})
 ```
 
-## Indentation 
+## Indentation
 IndentMultilineMessages=**true**
-```
-2022-04-04--18.10.20|INFO|FileLoggerDemo.App|{
-                                               "Date": "4/4/2022",
+```text
+2026-04-29--18.10.20|INFO|FileLoggerDemo.App|{
+                                               "Date": "4/29/2026",
                                                "Location": "Center Moriches",
                                                "TemperatureCelsius": 20,
                                                "Summary": "Nice"
                                              }
 ```
-  
+
 IndentMultilineMessages=**false**
-```
-2022-04-04--18.11.19|INFO|FileLoggerDemo.App|{
-  "Date": "4/4/2022",
+```text
+2026-04-29--18.11.19|INFO|FileLoggerDemo.App|{
+  "Date": "4/29/2026",
   "Location": "Center Moriches",
   "TemperatureCelsius": 20,
   "Summary": "Nice"
@@ -189,11 +161,11 @@ IndentMultilineMessages=**false**
 
 Note: The IndentMultilineMessages option is only for the Single-Line message format.
 
-## Roadmap
-* Support for Daily, Weekly or Monthly rolling log, up to 1GB maximum single log file.
-* Introduce option for configuring log appending:  
-  --> ON by default, but allow it to be turned OFF  
-  --> This would allow a new log file to be created with each program execution.
+## Debugging
+The package ships [Source Link](https://github.com/dotnet/sourcelink) and a matching `.snupkg` symbol package. With **Tools → Options → Debugging → General → Enable Source Link support** turned on (and **Enable Just My Code** turned off), Visual Studio will fetch the exact source revision from GitHub on demand and let you step into FileLogger directly.
+
+## Releases
+See [GitHub Releases](https://github.com/CodeFontana/FileLogger/releases) for the changelog.
 
 ## Reference
 https://docs.microsoft.com/en-us/dotnet/core/extensions/custom-logging-provider
